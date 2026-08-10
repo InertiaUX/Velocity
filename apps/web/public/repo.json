@@ -1,0 +1,28 @@
+{
+  "name": "Velocity Official",
+  "url": "https://vty.dev/repo",
+  "updated": "2026-08-10",
+  "description": "Official Velocity plugin repository. Browse installs in the app Library or at vty.dev/library.",
+  "plugins": [
+    {
+      "id": "com.velocity.spotify",
+      "name": "Spotify",
+      "version": "0.1.0",
+      "description": "Control Spotify playback from Velocity",
+      "icon": "https://vty.dev/repo/icons/spotify.svg",
+      "permissions": ["network", "media"],
+      "provides": ["app"],
+      "downloadUrl": "https://vty.dev/repo/packages/spotify.zip"
+    },
+    {
+      "id": "com.velocity.aura-wallpapers",
+      "name": "Aura Wallpapers",
+      "version": "0.1.0",
+      "description": "Example wallpaper pack for Velocity",
+      "icon": "https://vty.dev/repo/icons/aura-wallpapers.svg",
+      "permissions": ["wallpaper"],
+      "provides": ["wallpaper"],
+      "downloadUrl": "https://vty.dev/repo/packages/aura-wallpapers.zip"
+    }
+  ]
+}

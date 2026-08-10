@@ -698,12 +698,31 @@ export function HomeGrid() {
       const tileId = plugin.id === "com.velocity.spotify" ? "spotify" : plugin.id;
       const tilesNow = useDeviceStore.getState().homeTiles;
       if (!tilesNow.some((t) => t.id === tileId || t.pluginId === plugin.id)) {
+        const isSnapmatic = plugin.id.includes("snapmatic");
+        let iconPath: string | undefined;
+        if (plugin.path && plugin.icon) {
+          try {
+            const source = `${plugin.path.replace(/[/\\]+$/, "")}/${plugin.icon}`.replace(
+              /\\/g,
+              "/",
+            );
+            const imported = await importTileIcon(source);
+            iconPath = imported.path;
+          } catch {
+            /* builtin fallback */
+          }
+        }
         addCustomTile({
           id: tileId,
           kind: "plugin",
           title: plugin.name,
-          icon: plugin.id.includes("spotify") ? "♪" : "◆",
-          accent,
+          icon: plugin.id.includes("spotify")
+            ? "spotify"
+            : isSnapmatic
+              ? "snapmatic"
+              : "◆",
+          ...(iconPath ? { iconPath } : {}),
+          accent: isSnapmatic ? "#f5c518" : accent,
           pluginId: plugin.id,
           pageId: activePageId,
         });

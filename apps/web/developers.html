@@ -26,6 +26,7 @@
     <header class="site-bar">
       <a class="mark" href="/">Velocity</a>
       <nav class="bar-nav">
+        <a class="bar-link" href="/library.html">Library</a>
         <a class="bar-link" href="/developers.html" aria-current="page">Developers</a>
         <a class="bar-link" href="https://github.com/InertiaUX/Velocity">GitHub</a>
         <a class="bar-link" href="https://github.com/InertiaUX/Velocity/releases">Download</a>
@@ -48,6 +49,7 @@
         <a href="#structure">Structure</a>
         <a href="#quick-start">Quick start</a>
         <a href="#install">Install</a>
+        <a href="#repo">Repositories</a>
         <a href="#bridge">Host bridge</a>
         <a href="#wallpaper">Wallpapers</a>
         <a href="#security">Security</a>
@@ -111,14 +113,34 @@ document.getElementById("done").onclick = () =&gt; api.close();</code></pre>
       <section id="install">
         <h2>Install</h2>
         <ol>
-          <li>Open Velocity → <strong>Plugins</strong> → <strong>Install plugin</strong>.</li>
-          <li>Pick a plugin <strong>folder</strong> or <strong>.zip</strong> (must include <code>velocity.plugin.json</code>).</li>
+          <li>
+            Open Velocity → <strong>Plugins</strong> → <strong>Browse library</strong> (official catalog),
+            or <strong>Install from disk</strong>.
+          </li>
+          <li>For disk installs, pick a plugin <strong>folder</strong> or <strong>.zip</strong> (must include <code>velocity.plugin.json</code>).</li>
           <li>Review name, version, and permissions, then confirm.</li>
           <li>Open the plugin or add it to Home.</li>
         </ol>
-        <p>Dev shortcut: copy into the user plugins folder and tap <strong>Refresh list</strong>.</p>
+        <p>
+          Web catalog:
+          <a href="/library.html">vty.dev/library</a>. Dev shortcut: copy into the user plugins folder and tap
+          <strong>Refresh list</strong>.
+        </p>
         <p>Typical path on macOS:</p>
         <pre><code>~/Library/Application Support/com.inertiaux.velocity/plugins/</code></pre>
+      </section>
+
+      <section id="repo">
+        <h2>Plugin repositories</h2>
+        <p>
+          Velocity loads a JSON catalog (default
+          <a href="/repo"><code>https://vty.dev/repo</code></a>) listing HTTPS zip packages. Custom feeds:
+          Settings → Developer mode → Plugin repo URL.
+        </p>
+        <p>
+          Full schema and hosting notes:
+          <a href="https://github.com/InertiaUX/Velocity/blob/main/docs/plugin-repo.md">docs/plugin-repo.md</a>.
+        </p>
       </section>
 
       <section id="bridge">
@@ -215,6 +237,8 @@ document.getElementById("done").onclick = () =&gt; api.close();</code></pre>
     <footer class="site-foot">
       <div class="foot-row">
         <a href="/">Velocity</a>
+        <span aria-hidden="true">·</span>
+        <a href="/library.html">Library</a>
         <span aria-hidden="true">·</span>
         <a href="/developers.html">Developers</a>
         <span aria-hidden="true">·</span>

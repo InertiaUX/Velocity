@@ -5,11 +5,16 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 FEED_DIR="$ROOT/docs"
 PORT="${1:-8765}"
 FEED_URL="http://127.0.0.1:${PORT}/update-feed.local.json"
-CURRENT_VERSION="${CURRENT_VERSION:-0.1.0}"
+CURRENT_VERSION="${CURRENT_VERSION:-0.1.1}"
 
 cd "$ROOT/apps/desktop/src-tauri"
 echo "-> Running update unit tests..."
-cargo test --lib update_tests --quiet
+cargo test update_tests --quiet
+
+# Free the port if a previous run left a server behind.
+if command -v lsof >/dev/null 2>&1; then
+  lsof -tiTCP:"$PORT" -sTCP:LISTEN | xargs kill 2>/dev/null || true
+fi
 
 echo "-> Serving local feed on :$PORT..."
 python3 -m http.server "$PORT" --directory "$FEED_DIR" >/tmp/velocity-update-feed.log 2>&1 &

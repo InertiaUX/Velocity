@@ -1,0 +1,18 @@
+{
+  "name": "Example Plugin Repo",
+  "url": "https://example.com/repo",
+  "updated": "2026-08-10",
+  "description": "Example Velocity plugin repository feed.",
+  "plugins": [
+    {
+      "id": "com.example.hello",
+      "name": "Hello",
+      "version": "0.1.0",
+      "description": "Minimal example plugin",
+      "icon": "https://example.com/icons/hello.svg",
+      "permissions": [],
+      "provides": ["app"],
+      "downloadUrl": "https://example.com/packages/hello.zip"
+    }
+  ]
+}

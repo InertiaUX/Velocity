@@ -19,6 +19,7 @@
     "package:mac": "./scripts/package-mac-release.sh",
     "package:windows": "./scripts/package-windows-release.sh",
     "package:linux": "./scripts/package-linux-release.sh",
+    "package:plugin-repo": "./scripts/package-plugin-repo.sh",
     "deploy:web": "npm run deploy --workspace=@velocity/web"
   }
 }

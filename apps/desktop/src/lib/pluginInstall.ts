@@ -14,6 +14,27 @@ export type PluginInstallPreview = {
   sourcePath: string;
 };
 
+export type PluginRepoEntry = {
+  id: string;
+  name: string;
+  version: string;
+  description?: string | null;
+  icon?: string | null;
+  permissions: string[];
+  provides: string[];
+  downloadUrl: string;
+};
+
+export type PluginRepoFeed = {
+  name: string;
+  url?: string | null;
+  updated?: string | null;
+  description?: string | null;
+  plugins: PluginRepoEntry[];
+};
+
+export const DEFAULT_PLUGIN_REPO_URL = "https://vty.dev/repo";
+
 export const PERMISSION_LABELS: Record<string, string> = {
   network: "Open links and sign-in flows",
   media: "Media playback helpers",
@@ -63,6 +84,22 @@ export async function inspectPluginPackage(path: string): Promise<PluginInstallP
 
 export async function installPluginPackage(path: string): Promise<VelocityPluginManifest> {
   return invoke<VelocityPluginManifest>("install_plugin_from_path", { sourcePath: path });
+}
+
+export async function fetchPluginRepo(repoUrl?: string): Promise<PluginRepoFeed> {
+  return invoke<PluginRepoFeed>("fetch_plugin_repo", {
+    repoUrl: repoUrl?.trim() || null,
+  });
+}
+
+export async function downloadPluginPackage(downloadUrl: string): Promise<string> {
+  return invoke<string>("download_plugin_package", { downloadUrl });
+}
+
+/** Download a repo package, then inspect it for the permission sheet. */
+export async function previewRepoPlugin(downloadUrl: string): Promise<PluginInstallPreview> {
+  const path = await downloadPluginPackage(downloadUrl);
+  return inspectPluginPackage(path);
 }
 
 export function summarizePermissions(permissions: string[]): string {

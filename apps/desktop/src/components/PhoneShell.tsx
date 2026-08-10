@@ -131,6 +131,7 @@ export function PhoneShell() {
   const accent = useDeviceStore((s) => s.accent);
   const corner = useDeviceStore((s) => s.corner);
   const alwaysOnTop = useDeviceStore((s) => s.alwaysOnTop);
+  const showNotch = useDeviceStore((s) => s.showNotch);
   const autohideDock = useDeviceStore((s) => s.autohideDock);
   const showInDock = useDeviceStore((s) => s.showInDock);
   const keepInDock = useDeviceStore((s) => s.keepInDock);
@@ -343,7 +344,7 @@ export function PhoneShell() {
             </button>
           )}
 
-          <div className="notch" />
+          {showNotch && <div className="notch" />}
           <div className="phone-screen has-wallpaper">
             <WallpaperLayer wallpaper={wallpaper} />
             <DeviceAtmosphere hydrated={hydrated}>

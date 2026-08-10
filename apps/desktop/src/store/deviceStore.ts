@@ -71,8 +71,10 @@ export interface DeviceState {
   accent: string;
   corner: Corner;
   alwaysOnTop: boolean;
+  showNotch: boolean;
   checkForUpdates: boolean;
   updateFeedUrl: string;
+  pluginRepoUrl: string;
   developerMode: boolean;
   autohideDock: boolean;
   showInDock: boolean;
@@ -97,6 +99,8 @@ export interface DeviceState {
   searchEngine: SearchEngineId;
   /** Not persisted: landscape chrome for video */
   browserLandscape: boolean;
+  /** Not persisted: open Plugins app on library vs installed list */
+  pluginsLanding: "installed" | "library" | null;
   phoneVisible: boolean;
   kbFocusIndex: number;
   kbFocusVisible: boolean;
@@ -109,8 +113,10 @@ export interface DeviceState {
   setAccent: (a: string) => void;
   setCorner: (c: Corner) => void;
   setAlwaysOnTop: (v: boolean) => void;
+  setShowNotch: (v: boolean) => void;
   setCheckForUpdates: (v: boolean) => void;
   setUpdateFeedUrl: (u: string) => void;
+  setPluginRepoUrl: (u: string) => void;
   setDeveloperMode: (v: boolean) => void;
   setAutohideDock: (v: boolean) => void;
   setShowInDock: (v: boolean) => void;
@@ -144,6 +150,7 @@ export interface DeviceState {
   setBrowserUrl: (url: string | null) => void;
   setBrowserLandscape: (v: boolean) => void;
   setSearchEngine: (id: SearchEngineId) => void;
+  setPluginsLanding: (v: "installed" | "library" | null) => void;
   moveTileToSlot: (tileId: string, toSlot: number, pageId?: string) => void;
   setDockTileIds: (ids: string[]) => void;
   addToDock: (id: string) => void;
@@ -551,9 +558,10 @@ export const useDeviceStore = create<DeviceState>()(
       accent: "#7EB6FF",
       corner: "bottom-right",
       alwaysOnTop: false,
+      showNotch: true,
       checkForUpdates: true,
-      updateFeedUrl:
-        "https://raw.githubusercontent.com/InertiaUX/Velocity/main/docs/update-feed.json",
+      updateFeedUrl: "https://vty.dev/updates",
+      pluginRepoUrl: "https://vty.dev/repo",
       developerMode: false,
       autohideDock: false,
       showInDock: true,
@@ -577,6 +585,7 @@ export const useDeviceStore = create<DeviceState>()(
       browserUrl: "about:home",
       searchEngine: DEFAULT_SEARCH_ENGINE,
       browserLandscape: false,
+      pluginsLanding: null,
       phoneVisible: true,
       kbFocusIndex: 0,
       kbFocusVisible: false,
@@ -589,8 +598,10 @@ export const useDeviceStore = create<DeviceState>()(
       setAccent: (a) => set({ accent: a }),
       setCorner: (c) => set({ corner: c }),
       setAlwaysOnTop: (v) => set({ alwaysOnTop: v }),
+      setShowNotch: (v) => set({ showNotch: v }),
       setCheckForUpdates: (v) => set({ checkForUpdates: v }),
       setUpdateFeedUrl: (u) => set({ updateFeedUrl: u }),
+      setPluginRepoUrl: (u) => set({ pluginRepoUrl: u }),
       setDeveloperMode: (v) => set({ developerMode: v }),
       setAutohideDock: (v) => set({ autohideDock: v }),
       setShowInDock: (v) => set({ showInDock: v }),
@@ -908,6 +919,7 @@ export const useDeviceStore = create<DeviceState>()(
       setBrowserUrl: (url) => set({ browserUrl: url }),
       setBrowserLandscape: (v) => set({ browserLandscape: v }),
       setSearchEngine: (id) => set({ searchEngine: id }),
+      setPluginsLanding: (v) => set({ pluginsLanding: v }),
       setPhoneVisible: (v) => set({ phoneVisible: v }),
       setKbFocusIndex: (i) => set({ kbFocusIndex: Math.max(0, i) }),
       setKbFocusVisible: (v) => set({ kbFocusVisible: v }),
@@ -953,8 +965,10 @@ export const useDeviceStore = create<DeviceState>()(
         accent: s.accent,
         corner: s.corner,
         alwaysOnTop: s.alwaysOnTop,
+        showNotch: s.showNotch,
         checkForUpdates: s.checkForUpdates,
         updateFeedUrl: s.updateFeedUrl,
+        pluginRepoUrl: s.pluginRepoUrl,
         developerMode: s.developerMode,
         autohideDock: s.autohideDock,
         showInDock: s.showInDock,
@@ -994,6 +1008,12 @@ export const useDeviceStore = create<DeviceState>()(
             typeof p.deviceLoadingScreens === "boolean"
               ? p.deviceLoadingScreens
               : current.deviceLoadingScreens,
+          showNotch:
+            typeof p.showNotch === "boolean" ? p.showNotch : current.showNotch,
+          pluginRepoUrl:
+            typeof p.pluginRepoUrl === "string" && p.pluginRepoUrl.trim()
+              ? p.pluginRepoUrl.trim()
+              : current.pluginRepoUrl,
         };
         try {
           if (!Array.isArray(p.homeTiles)) {
@@ -1054,6 +1074,12 @@ export const useDeviceStore = create<DeviceState>()(
             (t.icon === "♪" || t.icon === "🎵" || t.icon === "♫")
           ) {
             return { ...t, icon: "spotify", accent: t.accent || "#1DB954" };
+          }
+          if (
+            (t.id === "com.inertiaux.snapmatic" || t.pluginId === "com.inertiaux.snapmatic") &&
+            (t.icon === "◆" || t.icon === "📷" || t.icon === "snapmatic" || !t.icon)
+          ) {
+            return { ...t, icon: "snapmatic", accent: t.accent || "#f5c518" };
           }
           if (
             (t.id === "bookmark-youtube" || t.url === "about:youtube") &&

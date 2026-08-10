@@ -11,6 +11,7 @@ export default defineConfig({
       input: {
         main: resolve(__dirname, "index.html"),
         developers: resolve(__dirname, "developers.html"),
+        library: resolve(__dirname, "library.html"),
       },
     },
   },

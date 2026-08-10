@@ -5,7 +5,7 @@
 <h1 align="center">Velocity</h1>
 
 <p align="center">
-  <strong>v0.1.2</strong><br>
+  <strong>v0.1.3</strong><br>
   <a href="https://vty.dev">vty.dev</a> · open source by <a href="https://github.com/InertiaUX">Inertia</a>
 </p>
 
@@ -33,10 +33,10 @@ It’s a natural fit for the FiveM community, and for livestreamers who want qui
 
 | Platform | Get it |
 |----------|--------|
-| **macOS** (Apple Silicon) | [v0.1.2 arm64 zip](https://github.com/InertiaUX/Velocity/releases/download/v0.1.2/Velocity-0.1.2-macOS-arm64.zip) |
-| **macOS** (Intel) | [v0.1.2 x86_64 zip](https://github.com/InertiaUX/Velocity/releases/download/v0.1.2/Velocity-0.1.2-macOS-x86_64.zip) |
-| **Windows** (x64) | [v0.1.2 setup](https://github.com/InertiaUX/Velocity/releases/download/v0.1.2/Velocity-0.1.2-windows-x64-setup.exe) |
-| **Linux** (x86_64) | [AppImage](https://github.com/InertiaUX/Velocity/releases/download/v0.1.2/Velocity-0.1.2-linux-x86_64.AppImage) · [deb](https://github.com/InertiaUX/Velocity/releases/download/v0.1.2/Velocity-0.1.2-linux-x86_64.deb) |
+| **macOS** (Apple Silicon) | [v0.1.3 arm64 zip](https://github.com/InertiaUX/Velocity/releases/download/v0.1.3/Velocity-0.1.3-macOS-arm64.zip) |
+| **macOS** (Intel) | [v0.1.3 x86_64 zip](https://github.com/InertiaUX/Velocity/releases/download/v0.1.3/Velocity-0.1.3-macOS-x86_64.zip) |
+| **Windows** (x64) | [v0.1.3 setup](https://github.com/InertiaUX/Velocity/releases/download/v0.1.3/Velocity-0.1.3-windows-x64-setup.exe) |
+| **Linux** (x86_64) | [AppImage](https://github.com/InertiaUX/Velocity/releases/download/v0.1.3/Velocity-0.1.3-linux-x86_64.AppImage) · [deb](https://github.com/InertiaUX/Velocity/releases/download/v0.1.3/Velocity-0.1.3-linux-x86_64.deb) |
 
 All assets: [GitHub Releases](https://github.com/InertiaUX/Velocity/releases). Install notes: [docs/install.md](docs/install.md).
 
@@ -70,7 +70,9 @@ Tag `v*` to run [.github/workflows/release.yml](.github/workflows/release.yml) a
 
 Velocity is a lightweight host for many tools: [DEVELOPERS.md](DEVELOPERS.md) · [vty.dev/developers](https://vty.dev/developers.html)
 
-**Install:** Plugins → Install plugin → pick a folder or `.zip` → confirm permissions → Open / Add to Home.
+**Install:** Plugins → Browse library (official repo) or Install from disk → confirm permissions → Open / Add to Home.
+
+Catalog: [vty.dev/library](https://vty.dev/library) · Feed: [vty.dev/repo](https://vty.dev/repo) · Repo docs: [docs/plugin-repo.md](docs/plugin-repo.md)
 
 Spotify example: create an app at the [Spotify Dashboard](https://developer.spotify.com/dashboard), redirect `http://127.0.0.1:18766/callback`, paste the **Client ID** in the tile (never commit a secret). Premium required for remote playback.
 
@@ -78,16 +80,16 @@ Spotify example: create an app at the [Spotify Dashboard](https://developer.spot
 
 ```
 apps/desktop/     Tauri 2 + React phone shell
-apps/web/         Site (vty.dev)
+apps/web/         Site (vty.dev) + /library + /repo
 packages/sdk/     @velocity/sdk
 plugins/          Example plugins
-docs/             Install, architecture, screenshots
-scripts/          Dev / build helpers
+docs/             Install, architecture, plugin repo, screenshots
+scripts/          Dev / build / repo packaging helpers
 ```
 
 ## Updates
 
-Settings → Updates checks an HTTPS JSON feed. Example: [docs/update-feed.example.json](docs/update-feed.example.json).
+Settings → **Updates** checks [https://vty.dev/updates](https://vty.dev/updates) (with GitHub fallbacks). Example: [docs/update-feed.example.json](docs/update-feed.example.json).
 
 ## License
 

@@ -56,4 +56,6 @@ Tagging `v*` runs GitHub Actions (`.github/workflows/release.yml`) and publishes
 
 ## Updates
 
-Settings → **Check for updates** (HTTPS feed). Example feed: [update-feed.example.json](update-feed.example.json).
+Settings → **Updates → Check now**. Default feed: [https://vty.dev/updates](https://vty.dev/updates) (falls back to GitHub raw + Releases API).
+
+Feed shape: [update-feed.example.json](update-feed.example.json). Local smoke test: `./scripts/test-updater.sh`.

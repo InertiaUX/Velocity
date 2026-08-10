@@ -1,5 +1,5 @@
 {
-  "version": "0.1.2",
-  "url": "https://github.com/InertiaUX/Velocity/releases/tag/v0.1.2",
-  "notes": "Plugin host polish, install UX, and macOS fullscreen/Spaces fixes."
+  "version": "0.1.3",
+  "url": "https://github.com/InertiaUX/Velocity/releases/tag/v0.1.3",
+  "notes": "Plugin library + GitHub repos, Settings reorganization, update feed on vty.dev, and multi-platform packaging fixes."
 }

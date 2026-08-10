@@ -20,4 +20,7 @@ Prefer new product capabilities as plugins (or thin host methods plugins can cal
 
 1. Bundled `plugins/` (dev) or Tauri resources (release).
 2. User dir under app data (shown in **Plugins** inside Velocity).
-3. Host reads `manifest.entry` (default `ui/index.html`), inlines relative scripts, injects the bridge from `@velocity/sdk`, and enforces declared `permissions`.
+3. Optional remote **plugin repo** JSON (default `https://vty.dev/repo`) → download zip → same install/permission path as local packages.
+4. Host reads `manifest.entry` (default `ui/index.html`), inlines relative scripts, injects the bridge from `@velocity/sdk`, and enforces declared `permissions`.
+
+Library UX: in-app **Plugins → Browse library**, and the web catalog at [vty.dev/library](https://vty.dev/library). See [plugin-repo.md](plugin-repo.md).

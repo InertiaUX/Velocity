@@ -1,0 +1,6 @@
+/repo /repo.json 200
+/repo/ /repo.json 200
+/library /library.html 200
+/library/ /library.html 200
+/updates /updates.json 200
+/updates/ /updates.json 200

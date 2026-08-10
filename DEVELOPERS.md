@@ -280,9 +280,23 @@ import type { VelocityPluginManifest } from "@velocity/sdk";
 - [ ] Theme updates via `velocity:theme`
 - [ ] No secrets in the folder you zip/share
 - [ ] README snippet for install path
+- [ ] Optional: publish a zip + repo feed entry ([docs/plugin-repo.md](docs/plugin-repo.md))
+
+## Plugin repositories
+
+Users can browse and install from a remote catalog (default [vty.dev/repo](https://vty.dev/repo), web UI [vty.dev/library](https://vty.dev/library)).
+
+To host your own source:
+
+1. Zip your plugin (manifest at zip root), **or** publish it as a GitHub repo.
+2. Publish a JSON feed matching [docs/plugin-repo.md](docs/plugin-repo.md), **or** point Velocity at a GitHub catalog / single-plugin repo URL.
+3. Point Velocity’s **Plugin repo URL** (Developer mode) at your feed or GitHub link.
+
+Rebuild official packages: `./scripts/package-plugin-repo.sh`.
 
 ## Related docs
 
 - [docs/plugins.md](docs/plugins.md): short reference
+- [docs/plugin-repo.md](docs/plugin-repo.md): repository feed + library
 - [docs/architecture.md](docs/architecture.md): shell overview
 - [CONTRIBUTING.md](CONTRIBUTING.md): contributing to Velocity itself

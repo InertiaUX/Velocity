@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Browse the official Velocity plugin library. Install packages from the repo inside the Velocity app."
+    />
+    <meta property="og:title" content="Library · Velocity" />
+    <meta property="og:url" content="https://vty.dev/library" />
+    <title>Library · Velocity</title>
+    <link
+      rel="stylesheet"
+      href="https://api.fontshare.com/v2/css?f[]=satoshi@700,500,400&f[]=general-sans@400,500,600&display=swap"
+    />
+  </head>
+  <body class="doc-page library-page">
+    <div class="atmosphere" aria-hidden="true">
+      <div class="atmosphere-wash" data-parallax="0.08"></div>
+      <div class="atmosphere-glow atmosphere-glow-a" data-parallax="0.14"></div>
+      <div class="atmosphere-glow atmosphere-glow-b" data-parallax="0.1"></div>
+    </div>
+
+    <header class="site-bar">
+      <a class="mark" href="/">Velocity</a>
+      <nav class="bar-nav">
+        <a class="bar-link" href="/library.html" aria-current="page">Library</a>
+        <a class="bar-link" href="/developers.html">Developers</a>
+        <a class="bar-link" href="https://github.com/InertiaUX/Velocity">GitHub</a>
+      </nav>
+    </header>
+
+    <main class="doc library-main">
+      <p class="doc-eyebrow">Plugin library</p>
+      <h1 class="doc-title">Library</h1>
+      <p class="doc-lede">
+        Browse the official Velocity repository. Open <strong>Plugins → Browse library</strong> in
+        the app to install with one tap — same idea as a package source for your phone shell.
+      </p>
+      <p class="doc-lede muted">
+        Feed:
+        <a href="/repo"><code>vty.dev/repo</code></a>
+        · Publish your own:
+        <a href="https://github.com/InertiaUX/Velocity/blob/main/docs/plugin-repo.md">docs</a>
+      </p>
+
+      <div class="library-toolbar">
+        <label class="library-search">
+          <span class="visually-hidden">Search plugins</span>
+          <input id="library-query" type="search" placeholder="Search plugins" autocomplete="off" />
+        </label>
+        <p id="library-status" class="library-status muted" aria-live="polite">Loading catalog…</p>
+      </div>
+
+      <div id="library-list" class="library-list" hidden></div>
+      <p id="library-empty" class="muted" hidden>No plugins match that search.</p>
+    </main>
+
+    <footer class="site-foot">
+      <div class="foot-row">
+        <a href="/">Velocity</a>
+        <span aria-hidden="true">·</span>
+        <a href="/library.html">Library</a>
+        <span aria-hidden="true">·</span>
+        <a href="/developers.html">Developers</a>
+        <span aria-hidden="true">·</span>
+        <a href="/repo">Repo feed</a>
+      </div>
+    </footer>
+
+    <script type="module" src="/src/library.ts"></script>
+  </body>
+</html>

@@ -122,7 +122,7 @@ export function PluginHost({
           ref={frameRef}
           className="plugin-frame"
           title={title}
-          sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+          sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads allow-display-capture"
           srcDoc={html}
         />
       )}
@@ -273,7 +273,8 @@ async function inlineScripts(
   for (const match of matches) {
     const file = match[1];
     const js = await read(file);
-    out = out.replace(match[0], `<script>${js}</script>`);
+    // Use a function replacer so `$` in plugin source is not treated as substitution.
+    out = out.replace(match[0], () => `<script>${js}</script>`);
   }
   return out;
 }

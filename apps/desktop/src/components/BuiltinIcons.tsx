@@ -53,6 +53,20 @@ export function SpotifyGlyph({ className }: IconProps) {
   );
 }
 
+export function SnapmaticGlyph({ className }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden>
+      <rect width="24" height="24" rx="6" fill="#1a1a1c" />
+      <rect x="3.5" y="5.5" width="17" height="13" rx="3" fill="#f5c518" />
+      <rect x="3.5" y="5.5" width="17" height="3.5" rx="1.5" fill="#e8e4dc" />
+      <circle cx="6.4" cy="7.25" r="0.85" fill="#f5c518" />
+      <circle cx="12" cy="12.5" r="4.2" fill="#2a2a2e" />
+      <circle cx="12" cy="12.5" r="3" fill="#1a4a6e" />
+      <circle cx="10.8" cy="11.4" r="0.85" fill="#fff" opacity="0.55" />
+    </svg>
+  );
+}
+
 export function YouTubeGlyph({ className }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" aria-hidden fill="currentColor">
@@ -113,6 +127,7 @@ export type BuiltinGlyphKind =
   | "browser"
   | "plugins"
   | "spotify"
+  | "snapmatic"
   | "youtube";
 
 export function builtinGlyphKind(tile: {
@@ -126,6 +141,12 @@ export function builtinGlyphKind(tile: {
   if (tile.id === "plugins" || tile.icon === "plugins") return "plugins";
   if (tile.id === "spotify" || tile.pluginId === "com.velocity.spotify" || tile.icon === "spotify")
     return "spotify";
+  if (
+    tile.id === "com.inertiaux.snapmatic" ||
+    tile.pluginId === "com.inertiaux.snapmatic" ||
+    tile.icon === "snapmatic"
+  )
+    return "snapmatic";
   if (tile.id === "bookmark-youtube" || tile.url === "about:youtube" || tile.icon === "youtube")
     return "youtube";
   return null;
@@ -147,6 +168,8 @@ export function BuiltinGlyph({
       return <PluginsGlyph className={className} />;
     case "spotify":
       return <SpotifyGlyph className={className} />;
+    case "snapmatic":
+      return <SnapmaticGlyph className={className} />;
     case "youtube":
       return <YouTubeGlyph className={className} />;
   }

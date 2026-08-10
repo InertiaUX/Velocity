@@ -1,6 +1,6 @@
 use base64::{engine::general_purpose::STANDARD as B64, Engine};
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
@@ -372,8 +372,282 @@ fn copy_dir(src: &PathBuf, dst: &PathBuf) -> Result<(), String> {
     Ok(())
 }
 
-const DEFAULT_UPDATE_FEED: &str =
-    "https://raw.githubusercontent.com/InertiaUX/Velocity/main/docs/update-feed.json";
+const DEFAULT_UPDATE_FEED: &str = "https://vty.dev/updates";
+
+/// Fallback if the primary feed host is unreachable (e.g. before Pages deploy).
+const FALLBACK_UPDATE_FEEDS: &[&str] = &[
+    "https://raw.githubusercontent.com/InertiaUX/Velocity/main/docs/update-feed.json",
+    "https://api.github.com/repos/InertiaUX/Velocity/releases/latest",
+];
+
+const DEFAULT_PLUGIN_REPO: &str = "https://vty.dev/repo";
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct GitHubTarget {
+    owner: String,
+    repo: String,
+    git_ref: String,
+    /// Path inside the repo (file or directory). Empty for repo root.
+    path: String,
+}
+
+fn strip_git_suffix(name: &str) -> &str {
+    name.strip_suffix(".git").unwrap_or(name)
+}
+
+/// Parse common github.com / raw.githubusercontent.com plugin or feed URLs.
+fn parse_github_target(url: &str) -> Option<GitHubTarget> {
+    let url = url.trim();
+    let lower = url.to_ascii_lowercase();
+
+    if lower.starts_with("https://raw.githubusercontent.com/")
+        || lower.starts_with("http://raw.githubusercontent.com/")
+    {
+        // Preserve original casing from `url` by slicing the same offsets.
+        let rest_orig = url.splitn(2, "githubusercontent.com/").nth(1)?;
+        let mut parts = rest_orig.split('/').filter(|p| !p.is_empty());
+        let owner = parts.next()?.to_string();
+        let repo = strip_git_suffix(parts.next()?).to_string();
+        let git_ref = parts.next().unwrap_or("main").to_string();
+        let path = parts.collect::<Vec<_>>().join("/");
+        return Some(GitHubTarget {
+            owner,
+            repo,
+            git_ref,
+            path,
+        });
+    }
+
+    if !(lower.starts_with("https://github.com/")
+        || lower.starts_with("http://github.com/")
+        || lower.starts_with("https://www.github.com/")
+        || lower.starts_with("http://www.github.com/"))
+    {
+        return None;
+    }
+    let rest_orig = if let Some(i) = url.to_ascii_lowercase().find("github.com/") {
+        &url[i + "github.com/".len()..]
+    } else {
+        return None;
+    };
+    let rest_orig = rest_orig.trim_end_matches('/');
+    // Ignore query/hash
+    let rest_orig = rest_orig.split(['?', '#']).next().unwrap_or(rest_orig);
+
+    let parts: Vec<&str> = rest_orig.split('/').filter(|p| !p.is_empty()).collect();
+    if parts.len() < 2 {
+        return None;
+    }
+    let owner = parts[0].to_string();
+    let repo = strip_git_suffix(parts[1]).to_string();
+
+    if parts.len() == 2 {
+        return Some(GitHubTarget {
+            owner,
+            repo,
+            git_ref: "main".into(),
+            path: String::new(),
+        });
+    }
+
+    match parts[2] {
+        "blob" | "tree" if parts.len() >= 4 => {
+            let git_ref = parts[3].to_string();
+            let path = parts[4..].join("/");
+            Some(GitHubTarget {
+                owner,
+                repo,
+                git_ref,
+                path,
+            })
+        }
+        "raw" if parts.len() >= 4 => {
+            // github.com/owner/repo/raw/ref/path
+            let git_ref = parts[3].to_string();
+            let path = parts[4..].join("/");
+            Some(GitHubTarget {
+                owner,
+                repo,
+                git_ref,
+                path,
+            })
+        }
+        "archive" => None, // already a package URL
+        "releases" => None, // release assets stay as-is
+        _ => Some(GitHubTarget {
+            owner,
+            repo,
+            git_ref: "main".into(),
+            path: String::new(),
+        }),
+    }
+}
+
+fn github_raw_url(gh: &GitHubTarget) -> String {
+    if gh.path.is_empty() {
+        format!(
+            "https://raw.githubusercontent.com/{}/{}/{}/",
+            gh.owner, gh.repo, gh.git_ref
+        )
+    } else {
+        format!(
+            "https://raw.githubusercontent.com/{}/{}/{}/{}",
+            gh.owner, gh.repo, gh.git_ref, gh.path
+        )
+    }
+}
+
+fn github_archive_url(gh: &GitHubTarget) -> String {
+    format!(
+        "https://github.com/{}/{}/archive/refs/heads/{}.zip",
+        gh.owner, gh.repo, gh.git_ref
+    )
+}
+
+fn github_join_path(base: &str, file: &str) -> String {
+    if base.is_empty() {
+        file.to_string()
+    } else if base.ends_with('/') {
+        format!("{base}{file}")
+    } else {
+        format!("{base}/{file}")
+    }
+}
+
+/// Candidate URLs to try when loading a plugin repository feed.
+fn expand_plugin_repo_urls(input: &str) -> Vec<String> {
+    let input = input.trim();
+    let mut out: Vec<String> = Vec::new();
+    let push = |list: &mut Vec<String>, u: String| {
+        if !u.is_empty() && !list.iter().any(|x| x == &u) {
+            list.push(u);
+        }
+    };
+
+    push(&mut out, input.to_string());
+
+    if let Some(gh) = parse_github_target(input) {
+        let path_lower = gh.path.to_ascii_lowercase();
+        if path_lower.ends_with(".json") {
+            push(&mut out, github_raw_url(&gh));
+        } else {
+            // Repo root or directory: look for common feed filenames.
+            for name in [
+                "repo.json",
+                "velocity-repo.json",
+                "plugin-repo.json",
+                "docs/plugin-repo.json",
+                "docs/repo.json",
+            ] {
+                let mut candidate = gh.clone();
+                candidate.path = github_join_path(&gh.path, name);
+                push(&mut out, github_raw_url(&candidate));
+            }
+            // Also try a plugin manifest at this path (single-plugin GitHub repo / folder).
+            let mut manifest = gh.clone();
+            manifest.path = github_join_path(&gh.path, "velocity.plugin.json");
+            push(&mut out, github_raw_url(&manifest));
+        }
+        // Alternate default branch name.
+        if gh.git_ref == "main" {
+            let mut master = gh.clone();
+            master.git_ref = "master".into();
+            if master.path.to_ascii_lowercase().ends_with(".json")
+                || master.path.ends_with("velocity.plugin.json")
+            {
+                push(&mut out, github_raw_url(&master));
+            } else {
+                for name in ["repo.json", "velocity-repo.json", "plugin-repo.json"] {
+                    let mut candidate = master.clone();
+                    candidate.path = github_join_path(&gh.path, name);
+                    push(&mut out, github_raw_url(&candidate));
+                }
+                let mut manifest = master;
+                manifest.path = github_join_path(&gh.path, "velocity.plugin.json");
+                push(&mut out, github_raw_url(&manifest));
+            }
+        }
+    }
+
+    out
+}
+
+fn assert_https_download_url(url: &str) -> Result<(), String> {
+    let lower = url.to_ascii_lowercase();
+    if lower.starts_with("https://")
+        || lower.starts_with("http://127.0.0.1")
+        || lower.starts_with("http://localhost")
+    {
+        Ok(())
+    } else {
+        Err("Plugin downloads must use HTTPS (or localhost for development)".into())
+    }
+}
+
+/// Turn GitHub repo / blob links into a concrete HTTPS zip (or raw) download URL.
+fn normalize_plugin_download_url(url: &str) -> Result<String, String> {
+    let url = url.trim();
+    assert_https_download_url(url)?;
+    let lower = url.to_ascii_lowercase();
+
+    // Already a release asset or direct zip.
+    if lower.contains("github.com/") && lower.contains("/releases/download/") {
+        return Ok(url.to_string());
+    }
+    if lower.contains("github.com/") && lower.contains("/archive/") && lower.ends_with(".zip") {
+        return Ok(url.to_string());
+    }
+
+    if let Some(gh) = parse_github_target(url) {
+        let path_lower = gh.path.to_ascii_lowercase();
+        if path_lower.ends_with(".zip") {
+            return Ok(github_raw_url(&gh));
+        }
+        // Directory or repo root → branch archive (find_plugin_root locates the manifest).
+        return Ok(github_archive_url(&gh));
+    }
+
+    Ok(url.to_string())
+}
+
+fn plugin_manifest_to_repo_feed(
+    manifest: &PluginManifest,
+    source_url: &str,
+    download_url: String,
+) -> PluginRepoFeed {
+    PluginRepoFeed {
+        name: format!("{} (GitHub)", manifest.name),
+        url: Some(source_url.to_string()),
+        updated: None,
+        description: manifest.description.clone().or_else(|| {
+            Some("Single plugin loaded from a GitHub link.".into())
+        }),
+        plugins: vec![PluginRepoEntry {
+            id: manifest.id.clone(),
+            name: manifest.name.clone(),
+            version: manifest.version.clone(),
+            description: manifest.description.clone(),
+            icon: None,
+            permissions: manifest.permissions.clone().unwrap_or_default(),
+            provides: manifest.provides.clone().unwrap_or_default(),
+            download_url,
+        }],
+    }
+}
+
+fn try_parse_manifest_as_repo(body: &str, source_url: &str) -> Option<PluginRepoFeed> {
+    let manifest: PluginManifest = serde_json::from_str(body).ok()?;
+    if manifest.id.trim().is_empty() || manifest.name.trim().is_empty() {
+        return None;
+    }
+    let download_url = normalize_plugin_download_url(source_url)
+        .ok()
+        .or_else(|| {
+            parse_github_target(source_url).map(|gh| github_archive_url(&gh))
+        })
+        .unwrap_or_else(|| source_url.to_string());
+    Some(plugin_manifest_to_repo_feed(&manifest, source_url, download_url))
+}
 
 fn ureq_get(url: &str) -> Result<String, String> {
     if url.starts_with("file://") {
@@ -387,20 +661,155 @@ fn ureq_get(url: &str) -> Result<String, String> {
         .args([
             "-fsSL",
             "-A",
-            "Velocity-UpdateCheck",
+            "Velocity/0.1",
             "-H",
             "Accept: application/json",
             url,
         ])
         .output()
-        .map_err(|e| format!("Failed to fetch updates: {e}"))?;
+        .map_err(|e| format!("Failed to fetch: {e}"))?;
     if !output.status.success() {
         return Err(format!(
-            "Update check failed: {}",
+            "Fetch failed: {}",
             String::from_utf8_lossy(&output.stderr)
         ));
     }
     String::from_utf8(output.stdout).map_err(|e| e.to_string())
+}
+
+fn ureq_download(url: &str, dest: &Path) -> Result<(), String> {
+    assert_https_download_url(url)?;
+    let dest_str = dest
+        .to_str()
+        .ok_or_else(|| "Invalid download path".to_string())?;
+    if let Some(parent) = dest.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    }
+    let output = std::process::Command::new("curl")
+        .args(["-fsSL", "-A", "Velocity/0.1", "-L", "-o", dest_str, url])
+        .output()
+        .map_err(|e| format!("Failed to download plugin: {e}"))?;
+    if !output.status.success() {
+        return Err(format!(
+            "Plugin download failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        ));
+    }
+    let meta = std::fs::metadata(dest).map_err(|e| e.to_string())?;
+    if meta.len() == 0 {
+        return Err("Downloaded plugin package was empty".into());
+    }
+    Ok(())
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct PluginRepoEntry {
+    id: String,
+    name: String,
+    version: String,
+    #[serde(default)]
+    description: Option<String>,
+    #[serde(default)]
+    icon: Option<String>,
+    #[serde(default)]
+    permissions: Vec<String>,
+    #[serde(default)]
+    provides: Vec<String>,
+    download_url: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct PluginRepoFeed {
+    name: String,
+    #[serde(default)]
+    url: Option<String>,
+    #[serde(default)]
+    updated: Option<String>,
+    #[serde(default)]
+    description: Option<String>,
+    #[serde(default)]
+    plugins: Vec<PluginRepoEntry>,
+}
+
+fn parse_plugin_repo(body: &str) -> Result<PluginRepoFeed, String> {
+    let feed: PluginRepoFeed =
+        serde_json::from_str(body).map_err(|e| format!("Invalid plugin repo feed: {e}"))?;
+    if feed.name.trim().is_empty() {
+        return Err("Plugin repo is missing name".into());
+    }
+    for entry in &feed.plugins {
+        if entry.id.trim().is_empty() || entry.name.trim().is_empty() {
+            return Err("Plugin repo entry is missing id or name".into());
+        }
+        if entry.download_url.trim().is_empty() {
+            return Err(format!("Plugin {} is missing downloadUrl", entry.id));
+        }
+        assert_https_download_url(&entry.download_url)?;
+        // Ensure GitHub (and other) links can be normalized to a package URL.
+        let _ = normalize_plugin_download_url(&entry.download_url)?;
+    }
+    Ok(feed)
+}
+
+#[tauri::command]
+fn fetch_plugin_repo(repo_url: Option<String>) -> Result<PluginRepoFeed, String> {
+    let url = repo_url
+        .filter(|u| !u.is_empty())
+        .unwrap_or_else(|| DEFAULT_PLUGIN_REPO.to_string());
+    let candidates = expand_plugin_repo_urls(&url);
+    let mut errors: Vec<String> = Vec::new();
+
+    for candidate in &candidates {
+        match ureq_get(candidate) {
+            Ok(body) => {
+                if let Ok(feed) = parse_plugin_repo(&body) {
+                    return Ok(feed);
+                }
+                if let Some(feed) = try_parse_manifest_as_repo(&body, &url) {
+                    return Ok(feed);
+                }
+                errors.push(format!("{candidate}: not a repo feed or plugin manifest"));
+            }
+            Err(e) => errors.push(format!("{candidate}: {e}")),
+        }
+    }
+
+    Err(format!(
+        "Could not load plugin repo from {url}. Tried GitHub feed paths and plugin manifests. {}",
+        errors.into_iter().take(4).collect::<Vec<_>>().join(" · ")
+    ))
+}
+
+#[tauri::command]
+fn download_plugin_package(download_url: String) -> Result<String, String> {
+    let resolved = normalize_plugin_download_url(&download_url)?;
+    let mut dest = std::env::temp_dir();
+    dest.push(format!(
+        "velocity-plugin-{}-{}.zip",
+        std::process::id(),
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_millis())
+            .unwrap_or(0)
+    ));
+    // Prefer requested branch archive; if main 404s, try master for bare repo links.
+    if let Err(e) = ureq_download(&resolved, &dest) {
+        if let Some(gh) = parse_github_target(&download_url) {
+            if gh.git_ref == "main" {
+                let mut master = gh;
+                master.git_ref = "master".into();
+                let fallback = github_archive_url(&master);
+                if fallback != resolved {
+                    ureq_download(&fallback, &dest)?;
+                    return Ok(dest.to_string_lossy().to_string());
+                }
+            }
+        }
+        return Err(e);
+    }
+    Ok(dest.to_string_lossy().to_string())
 }
 
 fn macos_dock_autohide_get() -> Option<bool> {
@@ -2215,6 +2624,31 @@ fn reveal_in_finder(path: String) -> Result<(), String> {
     }
 }
 
+fn version_is_newer(latest: &str, current: &str) -> bool {
+    let parse = |v: &str| -> Vec<u64> {
+        v.trim()
+            .trim_start_matches('v')
+            .split(|c: char| !c.is_ascii_digit())
+            .filter(|p| !p.is_empty())
+            .filter_map(|p| p.parse::<u64>().ok())
+            .collect()
+    };
+    let a = parse(latest);
+    let b = parse(current);
+    if a.is_empty() || a == b {
+        return false;
+    }
+    let len = a.len().max(b.len());
+    for i in 0..len {
+        let x = a.get(i).copied().unwrap_or(0);
+        let y = b.get(i).copied().unwrap_or(0);
+        if x != y {
+            return x > y;
+        }
+    }
+    false
+}
+
 fn evaluate_update_feed(current: &str, body: &str) -> Result<UpdateInfo, String> {
     let json: serde_json::Value =
         serde_json::from_str(body).map_err(|e| format!("Invalid update feed: {e}"))?;
@@ -2226,7 +2660,7 @@ fn evaluate_update_feed(current: &str, body: &str) -> Result<UpdateInfo, String>
         .trim_start_matches('v')
         .to_string();
 
-    let available = !latest.is_empty() && latest != current;
+    let available = !latest.is_empty() && version_is_newer(&latest, current);
     Ok(UpdateInfo {
         available,
         current_version: current.to_string(),
@@ -2251,17 +2685,39 @@ fn evaluate_update_feed(current: &str, body: &str) -> Result<UpdateInfo, String>
 #[tauri::command]
 fn check_for_updates(app: AppHandle, feed_url: Option<String>) -> Result<UpdateInfo, String> {
     let current = app.package_info().version.to_string();
-    let url = feed_url
+    let primary = feed_url
         .filter(|u| !u.is_empty())
         .unwrap_or_else(|| DEFAULT_UPDATE_FEED.to_string());
 
-    let body = ureq_get(&url)?;
-    evaluate_update_feed(&current, &body)
+    let mut urls = vec![primary.clone()];
+    // When using the default (or empty → default), also try published fallbacks.
+    if primary == DEFAULT_UPDATE_FEED {
+        for fallback in FALLBACK_UPDATE_FEEDS {
+            if !urls.iter().any(|u| u == fallback) {
+                urls.push((*fallback).to_string());
+            }
+        }
+    }
+
+    let mut last_err = String::new();
+    for url in urls {
+        match ureq_get(&url) {
+            Ok(body) => match evaluate_update_feed(&current, &body) {
+                Ok(info) => return Ok(info),
+                Err(e) => last_err = format!("{url}: {e}"),
+            },
+            Err(e) => last_err = format!("{url}: {e}"),
+        }
+    }
+    Err(format!("Update check failed. {last_err}"))
 }
 
 #[cfg(test)]
 mod update_tests {
-    use super::evaluate_update_feed;
+    use super::{
+        evaluate_update_feed, expand_plugin_repo_urls, github_raw_url, normalize_plugin_download_url,
+        parse_github_target, parse_plugin_repo,
+    };
 
     #[test]
     fn detects_newer_version() {
@@ -2283,6 +2739,19 @@ mod update_tests {
     }
 
     #[test]
+    fn no_update_when_feed_is_older() {
+        let info = evaluate_update_feed("0.1.2", r#"{"version":"0.1.1"}"#).unwrap();
+        assert!(!info.available);
+    }
+
+    #[test]
+    fn detects_semver_newer() {
+        let info = evaluate_update_feed("0.1.1", r#"{"version":"0.1.2"}"#).unwrap();
+        assert!(info.available);
+        assert_eq!(info.latest_version.as_deref(), Some("0.1.2"));
+    }
+
+    #[test]
     fn accepts_github_style_tag() {
         let info = evaluate_update_feed(
             "0.1.0",
@@ -2292,6 +2761,81 @@ mod update_tests {
         assert!(info.available);
         assert_eq!(info.latest_version.as_deref(), Some("0.1.1"));
         assert!(info.release_url.unwrap().contains("releases"));
+    }
+
+    #[test]
+    fn parses_plugin_repo_feed() {
+        let feed = parse_plugin_repo(
+            r#"{
+              "name":"Official",
+              "plugins":[{
+                "id":"com.example.hello",
+                "name":"Hello",
+                "version":"0.1.0",
+                "downloadUrl":"https://example.com/hello.zip",
+                "permissions":["network"]
+              }]
+            }"#,
+        )
+        .unwrap();
+        assert_eq!(feed.name, "Official");
+        assert_eq!(feed.plugins.len(), 1);
+        assert_eq!(feed.plugins[0].id, "com.example.hello");
+        assert_eq!(feed.plugins[0].download_url, "https://example.com/hello.zip");
+    }
+
+    #[test]
+    fn parses_github_repo_and_blob_urls() {
+        let root = parse_github_target("https://github.com/InertiaUX/hello-plugin").unwrap();
+        assert_eq!(root.owner, "InertiaUX");
+        assert_eq!(root.repo, "hello-plugin");
+        assert_eq!(root.git_ref, "main");
+        assert!(root.path.is_empty());
+
+        let blob = parse_github_target(
+            "https://github.com/InertiaUX/hello-plugin/blob/main/repo.json",
+        )
+        .unwrap();
+        assert_eq!(blob.path, "repo.json");
+        assert_eq!(
+            github_raw_url(&blob),
+            "https://raw.githubusercontent.com/InertiaUX/hello-plugin/main/repo.json"
+        );
+    }
+
+    #[test]
+    fn normalizes_github_download_to_archive() {
+        let url = normalize_plugin_download_url("https://github.com/acme/my-plugin").unwrap();
+        assert_eq!(
+            url,
+            "https://github.com/acme/my-plugin/archive/refs/heads/main.zip"
+        );
+    }
+
+    #[test]
+    fn expands_github_repo_feed_candidates() {
+        let urls = expand_plugin_repo_urls("https://github.com/acme/plugins");
+        assert!(urls.iter().any(|u| u.contains("repo.json")));
+        assert!(urls
+            .iter()
+            .any(|u| u.ends_with("/velocity.plugin.json")));
+    }
+
+    #[test]
+    fn accepts_github_download_url_in_feed() {
+        let feed = parse_plugin_repo(
+            r#"{
+              "name":"GH",
+              "plugins":[{
+                "id":"com.acme.hello",
+                "name":"Hello",
+                "version":"0.1.0",
+                "downloadUrl":"https://github.com/acme/hello"
+              }]
+            }"#,
+        )
+        .unwrap();
+        assert_eq!(feed.plugins[0].download_url, "https://github.com/acme/hello");
     }
 }
 
@@ -2850,6 +3394,8 @@ pub fn run() {
             read_plugin_file,
             install_plugin_from_path,
             inspect_plugin_package,
+            fetch_plugin_repo,
+            download_plugin_package,
             reveal_in_finder,
             check_for_updates,
             start_oauth_listener,

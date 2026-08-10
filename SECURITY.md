@@ -17,6 +17,7 @@ localhost-only or network-reachable.
 
 - OAuth / plugin callbacks must bind to **loopback** (`127.0.0.1`) only. Exposure beyond loopback is a bug.
 - Plugins run in sandboxed iframes but are still third-party code. Only install plugins you trust.
-- Update feeds should be **HTTPS**. Report MITM-friendly cleartext update URLs.
+- Update feeds and plugin repo feeds should be **HTTPS**. Report MITM-friendly cleartext update or repo URLs.
+- Plugin package downloads from a repo must be HTTPS (localhost allowed for development).
 - Do not report issues that require a malicious plugin the user intentionally installed, unless the host fails to enforce documented sandbox boundaries.
 - Spotify / third-party API account issues belong with those providers.
