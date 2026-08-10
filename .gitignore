@@ -1,0 +1,39 @@
+# Dependencies & builds
+node_modules/
+dist/
+**/dist/
+src-tauri/target/
+apps/desktop/src-tauri/target/
+apps/desktop/src-tauri/resources/
+packages/sdk/dist/
+apps/web/dist/
+.wrangler/
+
+# OS / editor
+.DS_Store
+.cursor/
+*.log
+*.swp
+*~
+
+# Secrets & local env (never commit)
+.env
+.env.*
+!.env.example
+apps/web/.env
+apps/web/.env.*
+!apps/web/.env.example
+
+# Local-only docs / feeds (may contain absolute paths)
+*.local.json
+docs/*.local.json
+*.pem
+*.p12
+*.key
+credentials.json
+**/GoogleService-Info.plist
+
+# Release staging (built artifacts)
+release/
+*.dmg
+*.app.zip

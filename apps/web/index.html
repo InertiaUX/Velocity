@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Velocity: desktop phone for shortcuts and plugins. Quick multitasking for gamers. Hide and show with a hotkey. macOS."
+    />
+    <meta property="og:title" content="Velocity" />
+    <meta
+      property="og:description"
+      content="Desktop phone companion for shortcuts, plugins, and quick multitasking."
+    />
+    <meta property="og:url" content="https://vty.dev" />
+    <title>Velocity</title>
+    <link
+      rel="stylesheet"
+      href="https://api.fontshare.com/v2/css?f[]=satoshi@700,500,400&f[]=general-sans@400,500,600&display=swap"
+    />
+  </head>
+  <body>
+    <div class="atmosphere" aria-hidden="true">
+      <div class="atmosphere-wash" data-parallax="0.12"></div>
+      <div class="atmosphere-glow atmosphere-glow-a" data-parallax="0.22"></div>
+      <div class="atmosphere-glow atmosphere-glow-b" data-parallax="0.18"></div>
+    </div>
+
+    <header class="site-bar">
+      <a class="mark" href="/">Velocity</a>
+      <nav class="bar-nav">
+        <a class="bar-link" href="/developers.html">Developers</a>
+        <a class="bar-link" href="https://github.com/InertiaUX/Velocity">GitHub</a>
+        <a class="bar-link" href="https://vty.dev">vty.dev</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <h1 class="brand">Velocity</h1>
+          <p class="lede">Your desktop phone for shortcuts and plugins.</p>
+          <div class="cta-row">
+            <a class="cta" id="download-cta" href="#install">Download for Mac</a>
+            <a class="cta-ghost" href="#install">Install steps</a>
+          </div>
+        </div>
+
+        <div class="hero-stage" aria-hidden="true">
+          <div class="phone-rise">
+            <div class="phone">
+              <div class="phone-bezel">
+                <div class="phone-screen">
+                  <div class="status-bar">
+                    <span>9:41</span>
+                    <span class="status-pills"></span>
+                  </div>
+                  <div class="home-grid">
+                    <div class="tile tile-clock">
+                      <span class="clock-time">9:41</span>
+                      <span class="clock-date">Sun Aug 9</span>
+                    </div>
+                    <div class="tile" style="--tile: #5865f2">
+                      <span class="tile-glyph">D</span>
+                      <span class="tile-label">Discord</span>
+                    </div>
+                    <div class="tile" style="--tile: #1db954">
+                      <span class="tile-glyph">♪</span>
+                      <span class="tile-label">Spotify</span>
+                    </div>
+                    <div class="tile" style="--tile: #7eb6ff">
+                      <span class="tile-glyph">◎</span>
+                      <span class="tile-label">Browser</span>
+                    </div>
+                    <div class="tile" style="--tile: #f0d56a">
+                      <span class="tile-glyph">+</span>
+                      <span class="tile-label">Add</span>
+                    </div>
+                    <div class="tile" style="--tile: #3d4450">
+                      <span class="tile-glyph">⚙</span>
+                      <span class="tile-label">Settings</span>
+                    </div>
+                  </div>
+                  <div class="dock">
+                    <i style="--tile: #5865f2"></i>
+                    <i style="--tile: #1db954"></i>
+                    <i style="--tile: #7eb6ff"></i>
+                    <i style="--tile: #3d4450"></i>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section hide-show" id="hide-show">
+        <h2>Hide &amp; show</h2>
+        <p class="section-lede">
+          The phone slides away when you need the desktop. Bring it back from anywhere.
+        </p>
+        <div class="hotkeys" data-keys>
+          <kbd>Shift</kbd>
+          <span class="hotkey-plus">+</span>
+          <kbd>Tab</kbd>
+        </div>
+      </section>
+
+      <section class="section multitask">
+        <h2>Quick multitasking</h2>
+        <p class="section-lede">
+          Built with gamers in mind. Pop Velocity up mid-match or mid-stream, jump to Discord,
+          Spotify, or your tools, then tuck it away without breaking flow.
+        </p>
+      </section>
+
+      <section class="section apps-home">
+        <h2>Your apps, one home</h2>
+        <p class="section-lede">
+          Launch Discord, Spotify, games, or anything you pick from one floating home screen.
+        </p>
+        <div class="tile-strip" aria-hidden="true">
+          <div class="strip-tile" style="--tile: #5865f2"><span>D</span>Discord</div>
+          <div class="strip-tile" style="--tile: #1db954"><span>♪</span>Spotify</div>
+          <div class="strip-tile" style="--tile: #ff6b35"><span>▶</span>Game</div>
+          <div class="strip-tile" style="--tile: #7eb6ff"><span>◎</span>Custom</div>
+        </div>
+      </section>
+
+      <section class="section install" id="install">
+        <h2>Install</h2>
+        <ol class="install-steps">
+          <li>Download the Mac zip (Apple Silicon).</li>
+          <li>Unzip and drag <code>Velocity.app</code> into Applications.</li>
+          <li>
+            Open it. If macOS blocks an unsigned build: right-click → Open → Open.
+          </li>
+        </ol>
+        <p class="section-lede muted">
+          Then finish onboarding. Hide and show with <kbd>Shift</kbd> + <kbd>Tab</kbd>.
+        </p>
+      </section>
+
+      <section class="section support" id="support">
+        <h2>Help Velocity become signed</h2>
+        <p class="section-lede">
+          Velocity is free. A signed Mac build needs an Apple Developer account and notarization.
+          If you want to chip in, it goes toward that so downloads can open with a normal double-click.
+        </p>
+        <div class="cta-row support-cta">
+          <a
+            class="cta-ghost"
+            id="support-cta"
+            href="https://github.com/sponsors/InertiaUX"
+            rel="noopener noreferrer"
+            >Optional tip</a
+          >
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-foot">
+      <div class="foot-row">
+        <span>InertiaUX</span>
+        <span aria-hidden="true">·</span>
+        <a href="/developers.html">Developers</a>
+        <span aria-hidden="true">·</span>
+        <a href="https://github.com/InertiaUX/Velocity">GitHub</a>
+        <span aria-hidden="true">·</span>
+        <a href="#support">Support</a>
+        <span aria-hidden="true">·</span>
+        <a href="https://vty.dev">vty.dev</a>
+      </div>
+      <details class="foot-more">
+        <summary>More information</summary>
+        <p>
+          Inspired by the GTA iFruit phone experience. Velocity is an independent product and is not
+          affiliated with, endorsed by, or sponsored by Rockstar Games or Take-Two Interactive.
+        </p>
+      </details>
+    </footer>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

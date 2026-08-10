@@ -1,0 +1,47 @@
+.color-wheel {
+  display: block;
+  margin: 0 auto;
+  max-width: 100%;
+  height: auto;
+  border-radius: 50%;
+  cursor: crosshair;
+  touch-action: none;
+  box-shadow: 0 0 0 1px var(--v-line);
+}
+
+.finish-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 0 14px;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.finish-sliders {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.finish-sliders label {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--v-ink-muted);
+}
+
+.finish-sliders input[type="range"] {
+  width: 100%;
+  accent-color: var(--v-accent);
+}
+
+.finish-sliders select {
+  background: var(--v-bg-panel);
+  color: var(--v-ink);
+  border: 1px solid var(--v-line);
+  border-radius: 8px;
+  padding: 6px 8px;
+}

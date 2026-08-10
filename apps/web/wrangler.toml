@@ -1,0 +1,10 @@
+# Cloudflare Pages - static site for https://vty.dev
+# Deploy: npm run deploy:web  (from repo root)
+# Or:     cd apps/web && npm run deploy
+#
+# First-time: create the Pages project, then attach the custom domain vty.dev
+# in the Cloudflare dashboard (Workers & Pages → velocity → Custom domains).
+
+name = "velocity"
+compatibility_date = "2026-08-01"
+pages_build_output_dir = "dist"

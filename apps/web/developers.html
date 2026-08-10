@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Create Velocity plugins: HTML/JS tiles inside the desktop phone. Manifest, host bridge, install path."
+    />
+    <meta property="og:title" content="Developers · Velocity" />
+    <meta property="og:url" content="https://vty.dev/developers.html" />
+    <title>Developers · Velocity</title>
+    <link
+      rel="stylesheet"
+      href="https://api.fontshare.com/v2/css?f[]=satoshi@700,500,400&f[]=general-sans@400,500,600&display=swap"
+    />
+  </head>
+  <body class="doc-page">
+    <div class="atmosphere" aria-hidden="true">
+      <div class="atmosphere-wash" data-parallax="0.08"></div>
+      <div class="atmosphere-glow atmosphere-glow-a" data-parallax="0.14"></div>
+      <div class="atmosphere-glow atmosphere-glow-b" data-parallax="0.1"></div>
+    </div>
+
+    <header class="site-bar">
+      <a class="mark" href="/">Velocity</a>
+      <nav class="bar-nav">
+        <a class="bar-link" href="/developers.html" aria-current="page">Developers</a>
+        <a class="bar-link" href="https://github.com/InertiaUX/Velocity">GitHub</a>
+        <a class="bar-link" href="https://github.com/InertiaUX/Velocity/releases">Download</a>
+      </nav>
+    </header>
+
+    <main class="doc">
+      <p class="doc-eyebrow">Developers</p>
+      <h1 class="doc-title">Create a plugin</h1>
+      <p class="doc-lede">
+        Plugins are small HTML apps that run as tiles inside Velocity. Ship a manifest, an entry page,
+        and talk to the host through <code>window.VelocityPlugin</code>.
+      </p>
+      <p class="doc-lede muted">
+        Full markdown guide on GitHub:
+        <a href="https://github.com/InertiaUX/Velocity/blob/main/DEVELOPERS.md">DEVELOPERS.md</a>
+      </p>
+
+      <nav class="doc-toc" aria-label="On this page">
+        <a href="#structure">Structure</a>
+        <a href="#quick-start">Quick start</a>
+        <a href="#install">Install</a>
+        <a href="#bridge">Host bridge</a>
+        <a href="#wallpaper">Wallpapers</a>
+        <a href="#security">Security</a>
+      </nav>
+
+      <section id="structure">
+        <h2>What a plugin is</h2>
+        <p>A plugin is a folder with:</p>
+        <ul>
+          <li><code>velocity.plugin.json</code>: id, name, entry, permissions</li>
+          <li><code>ui/index.html</code>: UI in a sandboxed iframe</li>
+          <li><code>assets/icon.svg</code>: optional home icon</li>
+        </ul>
+        <p>
+          Examples in the repo:
+          <a href="https://github.com/InertiaUX/Velocity/tree/main/plugins/spotify">spotify</a>,
+          <a href="https://github.com/InertiaUX/Velocity/tree/main/plugins/aura-wallpapers">aura-wallpapers</a>.
+        </p>
+      </section>
+
+      <section id="quick-start">
+        <h2>Quick start</h2>
+        <p>Manifest:</p>
+        <pre><code>{
+  "id": "com.example.hello",
+  "name": "Hello",
+  "version": "0.1.0",
+  "description": "Minimal Velocity plugin",
+  "icon": "assets/icon.svg",
+  "entry": "ui/index.html",
+  "permissions": []
+}</code></pre>
+        <p>Use a stable reverse-DNS <code>id</code>. UI skeleton:</p>
+        <pre><code>&lt;!doctype html&gt;
+&lt;html lang="en"&gt;
+  &lt;head&gt;
+    &lt;meta charset="UTF-8" /&gt;
+    &lt;meta name="viewport" content="width=device-width, initial-scale=1" /&gt;
+    &lt;title&gt;Hello&lt;/title&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;h1&gt;Hello&lt;/h1&gt;
+    &lt;button type="button" id="done"&gt;Close&lt;/button&gt;
+    &lt;script src="./app.js"&gt;&lt;/script&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</code></pre>
+        <pre><code>const api = window.VelocityPlugin;
+api.ready();
+api.onHostMessage((msg) =&gt; {
+  if (msg.type === "velocity:theme" || msg.type === "velocity:ready") {
+    // apply msg.theme.mode / msg.theme.accent
+  }
+});
+document.getElementById("done").onclick = () =&gt; api.close();</code></pre>
+        <p>
+          Relative <code>&lt;script src="./…"&gt;</code> files are inlined by the host. Keep app code local to
+          the plugin folder.
+        </p>
+      </section>
+
+      <section id="install">
+        <h2>Install while developing</h2>
+        <ol>
+          <li>Open Velocity → <strong>Plugins</strong>.</li>
+          <li>Copy your folder into the user plugins directory.</li>
+          <li>Tap <strong>Refresh</strong>, then open the tile from home.</li>
+        </ol>
+        <p>Typical path on macOS:</p>
+        <pre><code>~/Library/Application Support/com.inertiaux.velocity/plugins/</code></pre>
+      </section>
+
+      <section id="bridge">
+        <h2>Host bridge</h2>
+        <p><code>window.VelocityPlugin</code> is injected automatically.</p>
+        <div class="doc-table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Method</th>
+                <th>Purpose</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>ready()</code></td>
+                <td>Signal that the UI mounted</td>
+              </tr>
+              <tr>
+                <td><code>close()</code></td>
+                <td>Return to the home screen</td>
+              </tr>
+              <tr>
+                <td><code>toast(message)</code></td>
+                <td>Ask the host for a toast (reserved)</td>
+              </tr>
+              <tr>
+                <td><code>request(method, params?)</code></td>
+                <td>Promise-based host call</td>
+              </tr>
+              <tr>
+                <td><code>onHostMessage(handler)</code></td>
+                <td>Theme / responses; returns unsubscribe</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Common <code>request</code> methods: <code>wallpaper:get</code>, <code>wallpaper:apply</code>, <code>wallpaper:clear</code>.</p>
+        <p>
+          Permissions you may declare: <code>network</code>, <code>media</code>, <code>wallpaper</code>,
+          plus reserved <code>filesystem</code>, <code>notifications</code>, <code>clipboard</code>.
+        </p>
+      </section>
+
+      <section id="wallpaper">
+        <h2>Wallpaper plugins</h2>
+        <p>Set <code>provides: ["wallpaper"]</code>, permission <code>wallpaper</code>, and a <code>wallpapers</code> array:</p>
+        <pre><code>{
+  "permissions": ["wallpaper"],
+  "provides": ["wallpaper"],
+  "wallpapers": [
+    {
+      "id": "harbor",
+      "name": "Harbor",
+      "css": "linear-gradient(180deg, #0b1f2a, #7fd3c2)"
+    }
+  ]
+}</code></pre>
+        <pre><code>await VelocityPlugin.request("wallpaper:apply", {
+  pluginId: "com.example.pack",
+  id: "harbor",
+  css: "linear-gradient(180deg, #0b1f2a, #7fd3c2)",
+});</code></pre>
+      </section>
+
+      <section id="security">
+        <h2>Security</h2>
+        <ul>
+          <li>Plugins run in a sandboxed iframe. Only install code you trust.</li>
+          <li>Never commit API secrets; users paste Client IDs in your UI.</li>
+          <li>Shell OAuth callbacks bind to loopback only.</li>
+          <li>
+            Report sandbox escapes via
+            <a href="https://github.com/InertiaUX/Velocity/blob/main/SECURITY.md">SECURITY.md</a>.
+          </li>
+        </ul>
+      </section>
+
+      <p class="doc-cta-row">
+        <a class="cta" href="https://github.com/InertiaUX/Velocity/blob/main/DEVELOPERS.md"
+          >Full guide on GitHub</a
+        >
+        <a class="cta-ghost" href="https://github.com/InertiaUX/Velocity">Source</a>
+      </p>
+    </main>
+
+    <footer class="site-foot">
+      <div class="foot-row">
+        <a href="/">Velocity</a>
+        <span aria-hidden="true">·</span>
+        <a href="/developers.html">Developers</a>
+        <span aria-hidden="true">·</span>
+        <a href="https://vty.dev">vty.dev</a>
+      </div>
+      <details class="foot-more">
+        <summary>More information</summary>
+        <p>
+          Inspired by the GTA iFruit phone experience. Velocity is an independent product and is not
+          affiliated with, endorsed by, or sponsored by Rockstar Games or Take-Two Interactive.
+        </p>
+      </details>
+    </footer>
+
+    <script type="module" src="/src/doc.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,278 @@
+.browser-app {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  /* Solid surface so wallpaper never shows through as a black void */
+  background: var(--v-bg-panel);
+  color: var(--v-ink);
+}
+
+.browser-chrome {
+  flex-shrink: 0;
+  padding: 0 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.browser-nav-row {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.browser-actions {
+  justify-content: flex-end;
+}
+
+.browser-icon-btn {
+  width: 34px;
+  height: 30px;
+  border-radius: 8px;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--v-ink);
+  background: color-mix(in srgb, var(--v-bg-elevated) 88%, transparent);
+  border: 1px solid var(--v-line);
+  display: grid;
+  place-items: center;
+  padding: 0;
+}
+.browser-icon-btn:disabled {
+  opacity: 0.35;
+}
+
+.browser-text-btn {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 8px;
+  color: var(--v-accent);
+  background: color-mix(in srgb, var(--v-accent) 12%, transparent);
+}
+.browser-text-btn.is-active {
+  color: #fff;
+  background: var(--v-accent);
+}
+
+.browser-app.is-landscape .browser-chrome {
+  padding-bottom: 4px;
+  gap: 4px;
+}
+.browser-app.is-landscape .browser-address .text-input {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.browser-address .text-input {
+  width: 100%;
+  font-size: 13px;
+  padding: 8px 10px;
+}
+
+.browser-stage {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  background: var(--v-bg-elevated);
+  border-radius: 16px 16px 0 0;
+  overflow: hidden;
+  margin: 0 8px;
+  border: 1px solid var(--v-line);
+  border-bottom: none;
+  color: var(--v-ink);
+}
+
+.browser-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: var(--v-bg-elevated);
+}
+
+.browser-native-slot {
+  position: absolute;
+  inset: 0;
+  background: var(--v-bg-elevated);
+}
+
+.browser-loading,
+.browser-frame-error {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  gap: 12px;
+  padding: 24px;
+  text-align: center;
+  z-index: 2;
+  background: color-mix(in srgb, var(--v-bg-panel) 92%, transparent);
+  color: var(--v-ink-muted);
+  font-size: 13px;
+}
+
+.browser-embed-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 3;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+}
+
+.browser-home {
+  height: 100%;
+  overflow-y: auto;
+  padding: 16px 14px 24px;
+  background: var(--v-bg-elevated);
+  color: var(--v-ink);
+}
+
+.browser-home-title {
+  margin: 0 0 4px;
+  font-family: var(--v-font-display);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--v-ink);
+}
+
+.browser-home-lede {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--v-ink-muted);
+}
+
+.browser-interstitial {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  justify-content: center;
+}
+
+.browser-url-chip {
+  margin: 4px 0 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  word-break: break-all;
+  background: color-mix(in srgb, var(--v-bg-panel) 80%, transparent);
+  border: 1px solid var(--v-line);
+  color: var(--v-ink-muted);
+}
+
+.browser-home-search {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0 18px;
+}
+
+.browser-section-label {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--v-ink-muted);
+}
+
+.browser-quick {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px 6px;
+  margin-bottom: 18px;
+}
+
+.browser-quick-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--v-ink);
+}
+
+.browser-quick-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.22);
+}
+
+.browser-bookmark-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.browser-bookmark-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--v-bg-elevated) 80%, transparent);
+  border: 1px solid var(--v-line);
+  text-align: left;
+  width: 100%;
+}
+.browser-bookmark-row .meta {
+  flex: 1;
+  min-width: 0;
+}
+.browser-bookmark-row .meta strong {
+  display: block;
+  font-size: 13px;
+  color: var(--v-ink);
+}
+.browser-bookmark-row .meta small {
+  display: block;
+  font-size: 11px;
+  color: var(--v-ink-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.browser-note {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--v-ink-muted);
+}
+
+/* Keep Browser opaque over wallpaper - frosted transparency looked like a black screen */
+.phone-screen.has-wallpaper .browser-app {
+  background: var(--v-bg-panel);
+}
+.phone-screen.has-wallpaper .browser-stage,
+.phone-screen.has-wallpaper .browser-home {
+  background: var(--v-bg-elevated);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.phone-screen.has-wallpaper .browser-app .app-nav {
+  color: var(--v-ink);
+  text-shadow: none;
+  background: var(--v-bg-panel);
+}
+.phone-screen.has-wallpaper .browser-app .app-nav button {
+  text-shadow: none;
+}

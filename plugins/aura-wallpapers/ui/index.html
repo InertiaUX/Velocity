@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aura Wallpapers</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: "Segoe UI", "Helvetica Neue", sans-serif;
+        background: transparent;
+        color: var(--ink, #12161a);
+      }
+      .wrap { padding: 14px 16px 24px; }
+      h1 { margin: 0 0 6px; font-size: 20px; }
+      p { margin: 0 0 14px; color: #5c6670; font-size: 13px; line-height: 1.4; }
+      .grid { display: grid; gap: 10px; }
+      button.card {
+        border: 0;
+        border-radius: 14px;
+        padding: 0;
+        overflow: hidden;
+        text-align: left;
+        cursor: pointer;
+        box-shadow: 0 0 0 1px rgba(0,0,0,0.08);
+      }
+      .preview { height: 72px; }
+      .meta { padding: 10px 12px; background: rgba(255,255,255,0.72); backdrop-filter: blur(8px); }
+      .meta strong { display: block; font-size: 13px; }
+      .meta span { font-size: 11px; color: #5c6670; }
+      .status { margin-top: 12px; font-size: 12px; color: #5c6670; min-height: 1.2em; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>Aura</h1>
+      <p>Tap a wallpaper to apply it to your Velocity home screen.</p>
+      <div class="grid" id="grid"></div>
+      <p class="status" id="status"></p>
+    </div>
+    <script src="./app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,21 @@
+{
+  "name": "velocity",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Velocity - desktop phone companion for shortcuts and plugins (https://vty.dev)",
+  "workspaces": [
+    "apps/desktop",
+    "apps/web",
+    "packages/sdk",
+    "plugins/spotify"
+  ],
+  "scripts": {
+    "dev": "npm run tauri --workspace=apps/desktop -- dev",
+    "dev:web": "npm run dev --workspace=@velocity/web",
+    "build": "npm run tauri --workspace=apps/desktop -- build",
+    "build:web": "npm run build --workspace=@velocity/web",
+    "build:mac": "./scripts/build-mac.sh",
+    "build:desktop": "./scripts/build-desktop.sh",
+    "deploy:web": "npm run deploy --workspace=@velocity/web"
+  }
+}

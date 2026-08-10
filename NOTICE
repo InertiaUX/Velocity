@@ -1,0 +1,19 @@
+# NOTICE
+
+Velocity is an open-source product by [InertiaUX](https://github.com/InertiaUX).
+
+Website: [https://vty.dev](https://vty.dev)
+
+It is **not affiliated with, endorsed by, or sponsored by** Rockstar Games,
+Take-Two Interactive, or any related entity.
+
+Grand Theft Auto, GTA, iFruit, Snapmatic, and related marks are trademarks of
+their respective owners. Any resemblance to in-game interfaces is for
+parody / companion / nostalgia purposes only.
+
+Third-party services (for example Spotify) are subject to their own terms and
+developer policies. Plugin authors are responsible for complying with those
+policies. Do not commit API secrets; users enter their own Client IDs in-app.
+
+Related open-source work: [SnapmaticScreensaver](https://github.com/InertiaUX/SnapmaticScreensaver)
+(separate NOTICE for any archived Rockstar materials in that project).

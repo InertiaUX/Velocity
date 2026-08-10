@@ -1,0 +1,30 @@
+{
+  "id": "com.velocity.aura-wallpapers",
+  "name": "Aura Wallpapers",
+  "version": "0.1.0",
+  "description": "Example wallpaper pack for Velocity",
+  "icon": "assets/icon.svg",
+  "entry": "ui/index.html",
+  "permissions": ["wallpaper"],
+  "provides": ["wallpaper"],
+  "wallpapers": [
+    {
+      "id": "coral-dusk",
+      "name": "Coral Dusk",
+      "css": "linear-gradient(160deg, #2b1a24 0%, #c45c4a 45%, #f0c27b 100%)",
+      "preview": "linear-gradient(160deg, #2b1a24, #f0c27b)"
+    },
+    {
+      "id": "harbor",
+      "name": "Harbor",
+      "css": "linear-gradient(180deg, #0b1f2a 0%, #1f6f8b 55%, #7fd3c2 100%)",
+      "preview": "linear-gradient(180deg, #0b1f2a, #7fd3c2)"
+    },
+    {
+      "id": "volt-mist",
+      "name": "Volt Mist",
+      "css": "radial-gradient(circle at 30% 20%, rgba(240,213,106,0.55), transparent 45%), linear-gradient(165deg, #101820, #243b55)",
+      "preview": "linear-gradient(165deg, #101820, #f0d56a)"
+    }
+  ]
+}

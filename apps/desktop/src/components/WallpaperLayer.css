@@ -1,0 +1,107 @@
+.wallpaper-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: inherit;
+}
+
+.wallpaper-fill,
+.wallpaper-image {
+  position: absolute;
+  inset: 0;
+}
+
+.wallpaper-image {
+  background-size: cover;
+  background-position: center;
+  transform: scale(1.02);
+}
+
+.wallpaper-scrim {
+  position: absolute;
+  inset: 0;
+  /* Keep wallpaper visible while giving floating text a readable base */
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.34) 0%,
+    rgba(0, 0, 0, 0.12) 26%,
+    rgba(0, 0, 0, 0.1) 58%,
+    rgba(0, 0, 0, 0.38) 100%
+  );
+}
+
+.wallpaper-scrim.tone-light {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.28) 0%,
+    rgba(255, 255, 255, 0.08) 28%,
+    rgba(255, 255, 255, 0.1) 60%,
+    rgba(255, 255, 255, 0.32) 100%
+  );
+}
+
+[data-theme="light"] .wallpaper-scrim.tone-dark {
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.22) 0%,
+    rgba(0, 0, 0, 0.08) 30%,
+    rgba(0, 0, 0, 0.1) 62%,
+    rgba(0, 0, 0, 0.28) 100%
+  );
+}
+
+.phone-screen.has-wallpaper {
+  background: transparent;
+  /* Default: light chrome for dark wallpapers */
+  --v-chrome-ink: #f5f7fa;
+  --v-chrome-muted: rgba(245, 247, 250, 0.86);
+}
+
+.phone-screen.has-wallpaper[data-wallpaper-tone="light"] {
+  --v-chrome-ink: #12161a;
+  --v-chrome-muted: rgba(18, 22, 26, 0.72);
+}
+
+.phone-screen > .status-bar,
+.phone-screen > .screen-body,
+.phone-screen > .home-indicator {
+  position: relative;
+  z-index: 1;
+}
+
+.wallpaper-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 12px 14px 14px;
+}
+
+.wallpaper-swatch {
+  aspect-ratio: 0.62;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  overflow: hidden;
+  padding: 0;
+  position: relative;
+  box-shadow: inset 0 0 0 1px var(--v-line);
+}
+.wallpaper-swatch.selected {
+  border-color: var(--v-accent);
+}
+.wallpaper-swatch span {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 6px;
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+  text-align: left;
+}
+.wallpaper-swatch.is-light span {
+  color: #12161a;
+  text-shadow: none;
+}

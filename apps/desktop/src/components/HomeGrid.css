@@ -1,0 +1,872 @@
+.home {
+  padding: 8px 18px 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: pan-x;
+}
+
+.home-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+.home-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.edit-tools {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--v-chrome-ink, var(--v-ink)) 8%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.edit-tool {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  color: var(--v-chrome-ink, var(--v-ink));
+  background: transparent;
+  padding: 0;
+  transition: background 140ms ease, color 140ms ease, transform 140ms ease;
+}
+.edit-tool svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+.edit-tool:hover {
+  background: color-mix(in srgb, var(--v-chrome-ink, var(--v-ink)) 12%, transparent);
+}
+.edit-tool:active {
+  transform: scale(0.94);
+}
+.edit-tool.is-danger {
+  color: #ff6b5a;
+}
+.edit-tool:disabled {
+  opacity: 0.45;
+}
+
+.eyebrow {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--v-ink-muted);
+  font-family: var(--v-font-mono);
+}
+
+.home-header h1 {
+  margin: 4px 0 0;
+  font-family: var(--v-font-display);
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.edit-btn {
+  font-size: 14px;
+  font-weight: 600;
+  padding: 6px 10px;
+}
+
+.home-pager {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  width: 100%;
+  /* Prefer horizontal page turns; no vertical rubber-banding on home */
+  touch-action: pan-x;
+  cursor: grab;
+}
+.home-pager.is-swiping {
+  cursor: grabbing;
+}
+
+.home-pages {
+  display: flex;
+  height: 100%;
+  width: 100%;
+  transition: transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform;
+  position: relative;
+}
+
+.tile-grid,
+.page-grid {
+  /* Fill the pager with equal row tracks so the last row isn't clipped by the dock */
+  position: relative;
+  flex: 0 0 100%;
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: repeat(5, minmax(0, 1fr));
+  gap: 8px 12px;
+  padding: 2px 0 4px;
+  align-content: stretch;
+  align-items: start;
+  justify-items: center;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.tile-wrap {
+  position: relative;
+  border-radius: 18px;
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+  /* Placement comes from inline gridColumn/gridRow - avoid CSS span fighting slots */
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  max-width: 76px;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  z-index: 0;
+}
+.tile-wrap.is-kb-selected {
+  transform: translateY(-3px);
+}
+.tile-wrap.is-kb-selected .tile-icon,
+.tile.add-tile.is-kb-selected .tile-icon {
+  transform: scale(1.06);
+  box-shadow:
+    0 10px 20px rgba(0, 0, 0, 0.28),
+    0 0 0 2px color-mix(in srgb, var(--v-accent) 85%, transparent);
+}
+.tile-wrap.is-kb-selected .tile-title,
+.tile.add-tile.is-kb-selected .tile-title {
+  color: var(--v-accent);
+  font-weight: 600;
+}
+.tile.add-tile.is-kb-selected {
+  transform: translateY(-3px);
+}
+
+.tile-wrap.drop-target,
+.empty-slot.drop-target,
+.dock-slot.drop-target {
+  outline: 2px dashed color-mix(in srgb, var(--v-accent) 70%, transparent);
+  outline-offset: 2px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--v-accent) 12%, transparent);
+}
+
+.empty-slot {
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  max-width: 76px;
+  height: 100%;
+  max-height: 100%;
+  overflow: hidden;
+  border-radius: 16px;
+  border: none;
+  background: transparent;
+}
+
+.page-dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 7px;
+  min-height: 18px;
+  flex-shrink: 0;
+  padding: 2px 0 4px;
+}
+.page-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  padding: 0;
+  background: color-mix(in srgb, var(--v-chrome-ink, var(--v-ink)) 28%, transparent);
+  border: none;
+  transition: transform 160ms ease, background 160ms ease;
+}
+.page-dot.is-active {
+  background: var(--v-chrome-ink, var(--v-ink));
+  transform: scale(1.15);
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 4px;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* Shared icon box - macOS app icons larger; builtins stay slightly smaller (solid fill). */
+.tile-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  color: #fff;
+  transition: transform 160ms ease;
+  overflow: hidden;
+  flex: 0 0 58px;
+  -webkit-user-drag: none;
+  user-select: none;
+}
+.tile-icon.glyph {
+  box-shadow:
+    0 5px 12px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+
+/*
+ * Builtins stay visually ~52px, but share the same 58px layout band as macOS
+ * icons so optical centers (and labels) line up. Padding + content-box clip
+ * insets the fill without changing the flex height.
+ */
+.tile-icon.builtin-icon,
+.tile-icon.glyph:not(.app-icon) {
+  width: 58px;
+  height: 58px;
+  flex: 0 0 58px;
+  border-radius: 14px;
+  box-sizing: border-box;
+  padding: 3px;
+  background-origin: content-box;
+  background-clip: content-box;
+}
+.tile-icon.builtin-icon {
+  color: #fff;
+  box-shadow:
+    0 6px 14px rgba(0, 0, 0, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18);
+}
+.tile-icon.builtin-icon svg {
+  width: 26px;
+  height: 26px;
+  display: block;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.22));
+}
+.tile-icon.builtin-settings {
+  background:
+    radial-gradient(110% 80% at 28% 12%, rgba(255, 255, 255, 0.14), transparent 45%),
+    linear-gradient(165deg, #3a3f46 0%, #1c1f24 52%, #0c0e11 100%);
+  color: #d0d5dc;
+}
+.tile-icon.builtin-settings svg {
+  width: 34px;
+  height: 34px;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.55));
+}
+.tile-icon.builtin-browser {
+  background:
+    radial-gradient(120% 90% at 28% 20%, rgba(255, 255, 255, 0.4), transparent 45%),
+    linear-gradient(155deg, #9ec8ff 0%, #5a9cf0 45%, #3b6fd4 100%);
+}
+.tile-icon.builtin-plugins {
+  background:
+    radial-gradient(120% 90% at 28% 18%, rgba(255, 255, 255, 0.45), transparent 42%),
+    linear-gradient(155deg, #ffe08a 0%, #f0d56a 45%, #d4a017 100%);
+  color: #3a2f0a;
+}
+.tile-icon.builtin-spotify {
+  background: linear-gradient(160deg, #1ed760 0%, #1db954 55%, #12833a 100%);
+}
+.tile-icon.builtin-spotify svg {
+  width: 30px;
+  height: 30px;
+}
+.tile-icon.builtin-youtube {
+  background: linear-gradient(160deg, #ff4d4d 0%, #ff0033 55%, #c40028 100%);
+}
+.tile-icon.app-icon {
+  background: transparent;
+  border-radius: 14px;
+  box-shadow: 0 7px 16px rgba(0, 0, 0, 0.28);
+  line-height: 0;
+}
+.tile-icon.app-icon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  border-radius: inherit;
+  pointer-events: none;
+  -webkit-user-drag: none;
+  vertical-align: top;
+}
+
+.tile:active .tile-icon {
+  transform: scale(0.92);
+}
+
+.tile-title {
+  font-size: 10px;
+  line-height: 1.1;
+  color: var(--v-ink);
+  max-width: 100%;
+  width: 100%;
+  height: 12px;
+  flex: 0 0 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  box-sizing: border-box;
+}
+
+.tile-remove {
+  position: absolute;
+  top: -4px;
+  left: 4px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #ff4d3a;
+  color: #fff;
+  font-size: 16px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  z-index: 2;
+  pointer-events: auto;
+}
+
+.add-tile .tile-icon {
+  border: 1.5px dashed color-mix(in srgb, var(--v-ink) 22%, transparent);
+  color: #06110c;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+/* Widgets - fill the multi-row/col grid span; ignore the narrow app-icon max-width */
+.tile-wrap.is-widget {
+  overflow: hidden;
+  max-width: none;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  justify-self: stretch;
+  align-self: stretch;
+}
+.widget-tile {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
+  border-radius: 22px;
+  padding: 14px 16px;
+  background: color-mix(in srgb, var(--v-bg-elevated) 55%, transparent);
+  backdrop-filter: blur(18px) saturate(1.3);
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
+  border: 1px solid color-mix(in srgb, var(--v-line) 80%, rgba(255, 255, 255, 0.12));
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18);
+  align-items: flex-start;
+  justify-content: center;
+  text-align: left;
+  overflow: hidden;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+.clock-widget {
+  width: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  overflow: hidden;
+}
+.clock-time {
+  font-family: var(--v-font-display);
+  font-size: clamp(28px, 8vw, 44px);
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: var(--v-chrome-ink, var(--v-ink));
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+.clock-time span {
+  font-size: 13px;
+  margin-left: 6px;
+  font-weight: 600;
+  opacity: 0.8;
+  letter-spacing: 0.04em;
+  vertical-align: 0.35em;
+}
+.clock-weekday {
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--v-chrome-ink, var(--v-ink));
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+.clock-date {
+  margin-top: 0;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--v-chrome-muted, var(--v-ink-muted));
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  white-space: nowrap;
+}
+
+.clock-sheet .clock-preview-card {
+  margin: 4px 0 12px;
+  padding: 16px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--v-bg-elevated) 70%, transparent);
+  border: 1px solid var(--v-line);
+}
+.clock-sheet-label {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--v-ink-muted);
+}
+.clock-font-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.clock-font-swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px;
+  border-radius: 12px;
+  border: 1px solid var(--v-line);
+  background: var(--v-bg-panel);
+  color: var(--v-ink);
+}
+.clock-font-swatch.is-active {
+  border-color: color-mix(in srgb, var(--v-accent) 75%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--v-accent) 45%, transparent);
+  background: color-mix(in srgb, var(--v-accent) 12%, transparent);
+}
+.clock-font-sample {
+  font-size: 22px;
+  line-height: 1;
+}
+.clock-font-name {
+  font-size: 10px;
+  font-weight: 600;
+  font-family: var(--v-font-body);
+  color: var(--v-ink-muted);
+}
+.clock-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid var(--v-line);
+  font-size: 14px;
+}
+
+.tile-wrap.is-dragging {
+  opacity: 0.22;
+  z-index: 0;
+}
+.tile-wrap.is-dragging .tile,
+.tile-wrap.is-dragging .widget-tile {
+  transform: none;
+  box-shadow: none;
+  filter: grayscale(0.15);
+}
+.tile-wrap.is-dragging .tile-remove {
+  opacity: 0;
+  pointer-events: none;
+}
+.is-editing-home .tile-wrap {
+  touch-action: none;
+  user-select: none;
+}
+.is-editing-home .tile-wrap .tile {
+  cursor: grab;
+}
+.is-editing-home .tile-wrap.is-dragging .tile {
+  cursor: grabbing;
+}
+
+.tile-drag-ghost {
+  position: fixed;
+  z-index: 9000;
+  pointer-events: none;
+  transform: scale(1.08) rotate(-2deg);
+  filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.45));
+  will-change: left, top, transform;
+}
+.tile-drag-ghost .tile,
+.tile-drag-ghost .widget-tile {
+  width: 100%;
+  height: 100%;
+  cursor: grabbing;
+}
+
+/* Favorites dock */
+.phone-dock {
+  flex-shrink: 0;
+  padding: 0 2px 2px;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+.phone-dock.is-editing {
+  /* Room above the frosted pill so edit badges aren't clipped by backdrop-filter */
+  padding-top: 2px;
+}
+.phone-dock.is-drop-target .phone-dock-inner {
+  border-color: color-mix(in srgb, var(--v-accent) 70%, transparent);
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.22),
+    0 0 0 2px color-mix(in srgb, var(--v-accent) 55%, transparent);
+  transform: scale(1.02);
+}
+.phone-dock-inner {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  padding: 10px 16px;
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--v-bg-elevated) 48%, transparent);
+  backdrop-filter: blur(22px) saturate(1.4);
+  -webkit-backdrop-filter: blur(22px) saturate(1.4);
+  border: 1px solid color-mix(in srgb, var(--v-line) 70%, rgba(255, 255, 255, 0.1));
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22);
+  min-height: 76px;
+  align-items: center;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+.phone-dock.is-editing .phone-dock-inner {
+  /* Keep minus badges inside the pill (WebKit clips overflow with backdrop-filter) */
+  padding-top: 14px;
+  padding-bottom: 10px;
+}
+.dock-slot {
+  position: relative;
+  width: 58px;
+}
+.dock-tile {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  padding: 0;
+}
+/* Dock: prefer macOS app size; builtins keep their inset size via .builtin-icon */
+.dock-tile .tile-icon.app-icon {
+  width: 58px;
+  height: 58px;
+  flex-basis: 58px;
+}
+.dock-empty span {
+  display: block;
+  width: 58px;
+  height: 58px;
+  border-radius: 14px;
+  border: 1.5px dashed color-mix(in srgb, var(--v-ink) 18%, transparent);
+}
+.dock-remove {
+  top: -2px;
+  left: -2px;
+}
+
+.home-hint {
+  margin-top: 0;
+  text-align: center;
+  font-size: 11px;
+  color: var(--v-ink-muted);
+  padding-bottom: 2px;
+  line-height: 1.35;
+  flex-shrink: 0;
+}
+
+.phone-screen.has-wallpaper .home-header h1,
+.phone-screen.has-wallpaper .eyebrow,
+.phone-screen.has-wallpaper .home-hint,
+.phone-screen.has-wallpaper .edit-btn,
+.phone-screen.has-wallpaper .edit-tool,
+.phone-screen.has-wallpaper .tile-title {
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.65),
+    0 0 12px rgba(0, 0, 0, 0.35);
+}
+.phone-screen.has-wallpaper[data-wallpaper-tone="light"] .home-header h1,
+.phone-screen.has-wallpaper[data-wallpaper-tone="light"] .eyebrow,
+.phone-screen.has-wallpaper[data-wallpaper-tone="light"] .home-hint,
+.phone-screen.has-wallpaper[data-wallpaper-tone="light"] .edit-btn,
+.phone-screen.has-wallpaper[data-wallpaper-tone="light"] .edit-tool,
+.phone-screen.has-wallpaper[data-wallpaper-tone="light"] .tile-title {
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.85),
+    0 1px 3px rgba(255, 255, 255, 0.55);
+}
+.phone-screen.has-wallpaper .home-header h1,
+.phone-screen.has-wallpaper .edit-btn,
+.phone-screen.has-wallpaper .edit-tool {
+  color: var(--v-chrome-ink, var(--v-ink));
+}
+.phone-screen.has-wallpaper .edit-tools {
+  background: color-mix(in srgb, var(--v-chrome-ink, var(--v-ink)) 12%, transparent);
+}
+.phone-screen.has-wallpaper .eyebrow,
+.phone-screen.has-wallpaper .home-hint {
+  color: var(--v-chrome-muted, var(--v-ink-muted));
+}
+.phone-screen.has-wallpaper .tile-title {
+  color: var(--v-chrome-ink, var(--v-ink));
+  font-weight: 600;
+}
+.phone-screen.has-wallpaper .add-sheet-card {
+  background: color-mix(in srgb, var(--v-bg-elevated) 86%, transparent);
+  backdrop-filter: blur(24px) saturate(1.35);
+  -webkit-backdrop-filter: blur(24px) saturate(1.35);
+}
+
+.bookmark-field {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 10px;
+  text-align: left;
+}
+.bookmark-field span {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--v-ink-muted);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.bookmark-field .text-input {
+  width: 100%;
+}
+.bookmark-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0 8px;
+}
+.bookmark-preset {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--v-accent) 14%, transparent);
+  color: var(--v-accent);
+}
+
+.library-sheet-card {
+  max-height: min(78vh, 560px);
+  overflow-y: auto;
+}
+.library-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 4px 0 10px;
+}
+.library-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.library-row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  text-align: left;
+  background: color-mix(in srgb, var(--v-bg-panel) 70%, transparent);
+  border: 1px solid var(--v-line);
+}
+.library-row-main .tile-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+.library-row-main .meta {
+  min-width: 0;
+}
+.library-row-main .meta strong {
+  display: block;
+  font-size: 13px;
+}
+.library-row-main .meta small {
+  display: block;
+  font-size: 11px;
+  color: var(--v-ink-muted);
+}
+.library-purge {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--v-accent-hot);
+  padding: 6px 8px;
+}
+
+.wallpaper-sheet-card {
+  max-height: min(78vh, 560px);
+  overflow-y: auto;
+}
+.wallpaper-sheet-card .wallpaper-grid {
+  max-height: none;
+}
+
+.is-editing .tile.wiggle,
+.is-editing .dock-tile.wiggle {
+  animation: wiggle 280ms ease-in-out infinite alternate;
+}
+
+@keyframes wiggle {
+  from {
+    transform: rotate(-1.4deg);
+  }
+  to {
+    transform: rotate(1.4deg);
+  }
+}
+
+.add-sheet {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: end center;
+  padding: 16px 14px 28px;
+  background: rgba(0, 0, 0, 0.35);
+  animation: fade-up 180ms ease both;
+}
+.add-sheet-card {
+  width: 100%;
+  border-radius: 18px;
+  background: var(--v-bg-elevated);
+  border: 1px solid var(--v-line);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+}
+.add-sheet-title {
+  margin: 0;
+  font-weight: 700;
+  font-size: 16px;
+}
+.add-sheet-lede {
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: var(--v-ink-muted);
+  line-height: 1.35;
+}
+.add-sheet-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--v-bg-panel);
+  border: 1px solid var(--v-line);
+  text-align: left;
+  transition: background 160ms ease, border-color 160ms ease;
+}
+.add-sheet-option.is-kb-selected,
+.add-sheet-cancel.is-kb-selected {
+  border-color: var(--v-accent);
+  background: color-mix(in srgb, var(--v-accent) 14%, var(--v-bg-panel));
+  box-shadow: inset 2.5px 0 0 var(--v-accent);
+}
+.add-sheet-option strong {
+  display: block;
+  font-size: 14px;
+}
+.add-sheet-option small {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--v-ink-muted);
+}
+.add-sheet-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  color: #06110c;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.add-sheet-cancel {
+  margin-top: 4px;
+  padding: 10px;
+  color: var(--v-ink-muted);
+  font-weight: 600;
+  border-radius: 10px;
+}
+
+.tile-menu {
+  position: fixed;
+  z-index: 50;
+  min-width: 176px;
+  padding: 6px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--v-bg-elevated) 92%, transparent);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+  border: 1px solid var(--v-line);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.tile-menu button {
+  text-align: left;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.tile-menu button:hover {
+  background: color-mix(in srgb, var(--v-accent) 18%, transparent);
+}
+.tile-menu button.danger {
+  color: #ff6b5a;
+}
