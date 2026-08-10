@@ -63,6 +63,12 @@ jobs:
       - name: Install npm dependencies
         run: npm ci
 
+      # npm ci on a macOS-generated lockfile often skips other-OS optional
+      # bindings for @tauri-apps/cli; reinstall the CLI so the runner platform binding is present.
+      - name: Ensure Tauri CLI binding
+        shell: bash
+        run: npm install --no-save --workspace=@velocity/desktop @tauri-apps/cli@2.11.4
+
       - name: Package
         shell: bash
         run: ${{ matrix.package }}

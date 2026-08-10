@@ -33,5 +33,11 @@
     "typescript": "~5.8.3",
     "vite": "^7.0.4",
     "vitest": "^3.2.7"
+  },
+  "optionalDependencies": {
+    "@tauri-apps/cli-darwin-arm64": "2.11.4",
+    "@tauri-apps/cli-darwin-x64": "2.11.4",
+    "@tauri-apps/cli-linux-x64-gnu": "2.11.4",
+    "@tauri-apps/cli-win32-x64-msvc": "2.11.4"
   }
 }
