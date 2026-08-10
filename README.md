@@ -10,16 +10,16 @@
 </p>
 
 <p align="center">
-  Desktop phone companion for shortcuts and plugins.<br>
+  Desktop phone shell — a lightweight host for shortcuts and plugins.<br>
   Inspired by GTA’s in-game phone.
   <strong>Not affiliated with Rockstar Games or Take-Two Interactive.</strong>
 </p>
 
 ## Why this exists
 
-Inspired by GTA’s in-game phone: a floating home screen on your desktop for shortcuts, themes, and plugins. Hide and show it with a hotkey (default **Shift+Tab**).
+Inspired by GTA’s in-game phone: a floating home screen on your desktop. Hide and show it with a hotkey (default **Shift+Tab**). Velocity stays a **thin shell**; apps and tools ship as HTML plugins that talk to a small host API.
 
-It’s a natural fit for the FiveM community, and for livestreamers who want quick access to apps, tools, and links without a Stream Deck. Built with gamers in mind for quick multitasking mid-match or mid-stream. Launch Discord, Spotify, browsers, games, custom tiles, wallpaper packs, and whatever else you wire up.
+It’s a natural fit for the FiveM community, and for livestreamers who want quick access to apps, tools, and links without a Stream Deck. Built with gamers in mind for quick multitasking mid-match or mid-stream. Launch Discord, Spotify, browsers, games, custom tiles, wallpaper packs, and whatever else you wire up as a plugin.
 
 ## Screenshots
 
@@ -34,12 +34,13 @@ It’s a natural fit for the FiveM community, and for livestreamers who want qui
 | Platform | Get it |
 |----------|--------|
 | **macOS** (Apple Silicon) | [v0.1.1 arm64 zip](https://github.com/InertiaUX/Velocity/releases/download/v0.1.1/Velocity-0.1.1-macOS-arm64.zip) |
-| **macOS** (Intel / universal) | Build: `ARCH=x86_64` or `ARCH=universal ./scripts/build-mac.sh` |
-| **Windows / Linux** | Build: `./scripts/build-desktop.sh` |
+| **macOS** (Intel) | [v0.1.1 x86_64 zip](https://github.com/InertiaUX/Velocity/releases/download/v0.1.1/Velocity-0.1.1-macOS-x86_64.zip) |
+| **Windows** (x64) | [v0.1.1 setup](https://github.com/InertiaUX/Velocity/releases/download/v0.1.1/Velocity-0.1.1-windows-x64-setup.exe) |
+| **Linux** (x86_64) | [AppImage](https://github.com/InertiaUX/Velocity/releases/download/v0.1.1/Velocity-0.1.1-linux-x86_64.AppImage) · [deb](https://github.com/InertiaUX/Velocity/releases/download/v0.1.1/Velocity-0.1.1-linux-x86_64.deb) |
 
-Install: unzip → drag `Velocity.app` to Applications → open (right-click → Open if Gatekeeper blocks). Full notes: [docs/install.md](docs/install.md).
+All assets: [GitHub Releases](https://github.com/InertiaUX/Velocity/releases). Install notes: [docs/install.md](docs/install.md).
 
-Site: [https://vty.dev](https://vty.dev) · Optional tip toward Mac signing: [vty.dev/#support](https://vty.dev/#support)
+Site: [https://vty.dev](https://vty.dev) · Optional tip toward signing: [vty.dev/#support](https://vty.dev/#support)
 
 ## Develop
 
@@ -57,12 +58,19 @@ Controls: Shift+Tab hide/show · Esc back · optional keyboard control in Settin
 ```bash
 ./scripts/build-mac.sh
 ./scripts/build-desktop.sh
+npm run package:mac          # → release/Velocity-*-macOS-*.zip
+# on Windows / Linux hosts:
+npm run package:windows
+npm run package:linux
 npm run build:web
 ```
 
+Tag `v*` to run [.github/workflows/release.yml](.github/workflows/release.yml) and attach multi-platform artifacts.
 ## Plugins
 
-HTML tiles inside Velocity: [DEVELOPERS.md](DEVELOPERS.md) · [vty.dev/developers](https://vty.dev/developers.html)
+Velocity is a lightweight host for many tools: [DEVELOPERS.md](DEVELOPERS.md) · [vty.dev/developers](https://vty.dev/developers.html)
+
+**Install:** Plugins → Install plugin → pick a folder or `.zip` → confirm permissions → Open / Add to Home.
 
 Spotify example: create an app at the [Spotify Dashboard](https://developer.spotify.com/dashboard), redirect `http://127.0.0.1:18766/callback`, paste the **Client ID** in the tile (never commit a secret). Premium required for remote playback.
 

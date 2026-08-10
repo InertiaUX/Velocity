@@ -1,18 +1,89 @@
 import "./styles.css";
 
-const DOWNLOAD_URL =
-  import.meta.env.VITE_DOWNLOAD_URL ||
-  "https://github.com/InertiaUX/Velocity/releases/download/v0.1.1/Velocity-0.1.1-macOS-arm64.zip";
+const RELEASE_VERSION = "0.1.1";
+const RELEASE_TAG = `v${RELEASE_VERSION}`;
+const RELEASES_PAGE = "https://github.com/InertiaUX/Velocity/releases";
+const RELEASE_BASE = `https://github.com/InertiaUX/Velocity/releases/download/${RELEASE_TAG}`;
+
+type DownloadTarget = {
+  label: string;
+  url: string;
+  installHint: string;
+};
+
+function detectDownload(): DownloadTarget {
+  const override = import.meta.env.VITE_DOWNLOAD_URL;
+  if (override) {
+    return {
+      label: "Download",
+      url: override,
+      installHint: "Download the build for your platform from the link above.",
+    };
+  }
+
+  const ua = navigator.userAgent;
+  const platform = navigator.platform || "";
+  const isMac = /Mac|iPhone|iPad|iPod/i.test(ua) || platform.startsWith("Mac");
+  const isWin = /Windows/i.test(ua) || platform.startsWith("Win");
+  const isLinux = /Linux/i.test(ua) && !/Android/i.test(ua);
+
+  if (isMac) {
+    // Browsers rarely expose arm vs Intel; default to Apple Silicon and point Intel users to Releases.
+    return {
+      label: "Download for Mac",
+      url: `${RELEASE_BASE}/Velocity-${RELEASE_VERSION}-macOS-arm64.zip`,
+      installHint:
+        "Download the Mac zip, unzip, and drag Velocity.app into Applications. On an Intel Mac, grab the x86_64 zip from Other platforms.",
+    };
+  }
+
+  if (isWin) {
+    return {
+      label: "Download for Windows",
+      url: `${RELEASE_BASE}/Velocity-${RELEASE_VERSION}-windows-x64-setup.exe`,
+      installHint: "Run the Windows installer. WebView2 is required (Windows 10/11 usually include it).",
+    };
+  }
+
+  if (isLinux) {
+    return {
+      label: "Download for Linux",
+      url: `${RELEASE_BASE}/Velocity-${RELEASE_VERSION}-linux-x86_64.AppImage`,
+      installHint:
+        "Download the AppImage (or .deb from Other platforms), mark it executable, then run it. Needs WebKitGTK.",
+    };
+  }
+
+  return {
+    label: "View downloads",
+    url: RELEASES_PAGE,
+    installHint: "Pick the build for your platform from GitHub Releases.",
+  };
+}
+
+const download = detectDownload();
 
 const SUPPORT_URL =
   import.meta.env.VITE_SUPPORT_URL || "https://github.com/sponsors/InertiaUX";
 
 const cta = document.querySelector<HTMLAnchorElement>("#download-cta");
 if (cta) {
-  cta.href = DOWNLOAD_URL;
-  if (DOWNLOAD_URL.startsWith("http")) {
+  cta.href = download.url;
+  cta.textContent = download.label;
+  if (download.url.startsWith("http")) {
     cta.rel = "noopener noreferrer";
   }
+}
+
+const otherPlatforms = document.querySelector<HTMLAnchorElement>("#other-platforms");
+if (otherPlatforms) {
+  otherPlatforms.href = RELEASES_PAGE;
+  otherPlatforms.rel = "noopener noreferrer";
+}
+
+const installHint = document.querySelector<HTMLElement>("#install-hint");
+if (installHint) {
+  installHint.textContent = download.installHint;
 }
 
 const supportCta = document.querySelector<HTMLAnchorElement>("#support-cta");

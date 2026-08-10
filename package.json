@@ -16,6 +16,9 @@
     "build:web": "npm run build --workspace=@velocity/web",
     "build:mac": "./scripts/build-mac.sh",
     "build:desktop": "./scripts/build-desktop.sh",
+    "package:mac": "./scripts/package-mac-release.sh",
+    "package:windows": "./scripts/package-windows-release.sh",
+    "package:linux": "./scripts/package-linux-release.sh",
     "deploy:web": "npm run deploy --workspace=@velocity/web"
   }
 }

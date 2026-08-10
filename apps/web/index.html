@@ -6,12 +6,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Velocity: desktop phone for shortcuts and plugins. Quick multitasking for gamers. Hide and show with a hotkey. macOS."
+      content="Velocity: lightweight desktop phone host for shortcuts and plugins. Quick multitasking for gamers. Hide and show with a hotkey. macOS, Windows, and Linux."
     />
     <meta property="og:title" content="Velocity" />
     <meta
       property="og:description"
-      content="Desktop phone companion for shortcuts, plugins, and quick multitasking."
+      content="Lightweight desktop phone host for shortcuts, plugins, and quick multitasking."
     />
     <meta property="og:url" content="https://vty.dev" />
     <title>Velocity</title>
@@ -40,10 +40,12 @@
       <section class="hero">
         <div class="hero-copy">
           <h1 class="brand">Velocity</h1>
-          <p class="lede">Your desktop phone for shortcuts and plugins.</p>
+          <p class="lede">A lightweight phone host for shortcuts and plugins.</p>
           <div class="cta-row">
-            <a class="cta" id="download-cta" href="#install">Download for Mac</a>
-            <a class="cta-ghost" href="#install">Install steps</a>
+            <a class="cta" id="download-cta" href="#install">Download</a>
+            <a class="cta-ghost" id="other-platforms" href="https://github.com/InertiaUX/Velocity/releases"
+              >Other platforms</a
+            >
           </div>
         </div>
 
@@ -130,11 +132,17 @@
 
       <section class="section install" id="install">
         <h2>Install</h2>
+        <p class="section-lede" id="install-hint">
+          Download the build for your platform, then finish onboarding.
+        </p>
         <ol class="install-steps">
-          <li>Download the Mac zip (Apple Silicon).</li>
-          <li>Unzip and drag <code>Velocity.app</code> into Applications.</li>
+          <li>Download from the button above (or Other platforms on GitHub Releases).</li>
           <li>
-            Open it. If macOS blocks an unsigned build: right-click → Open → Open.
+            macOS: unzip and drag <code>Velocity.app</code> into Applications. Windows: run the
+            installer. Linux: run the AppImage or install the <code>.deb</code>.
+          </li>
+          <li>
+            On macOS, if Gatekeeper blocks an unsigned build: right-click → Open → Open.
           </li>
         </ol>
         <p class="section-lede muted">

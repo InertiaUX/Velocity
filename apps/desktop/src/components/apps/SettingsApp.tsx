@@ -29,11 +29,13 @@ import { AccentPicker } from "../AccentPicker";
 import { checkUpdates, getAppVersion, type UpdateInfo } from "../../lib/updates";
 import { factoryResetVelocity } from "../../lib/factoryReset";
 import { respringVelocity } from "../../lib/respring";
+import { isMacOS } from "../../lib/platform";
 import { openUrl } from "@tauri-apps/plugin-opener";
 import "../WallpaperLayer.css";
 import "./AppScreens.css";
 
 export function SettingsApp() {
+  const macOS = isMacOS();
   const openApp = useDeviceStore((s) => s.openApp);
   const phoneColor = useDeviceStore((s) => s.phoneColor);
   const customFinish = useDeviceStore((s) => s.customFinish);
@@ -424,28 +426,32 @@ export function SettingsApp() {
           </Row>
           <p className="muted pad">Hides and shows the phone from anywhere</p>
           {hotkeyError && <p className="muted pad">{hotkeyError}</p>}
-          <Row label="Keep in Dock">
-            <input
-              type="checkbox"
-              checked={keepInDock}
-              onChange={(e) => applyKeepInDock(e.target.checked)}
-            />
-          </Row>
-          {dockError && <p className="muted pad">{dockError}</p>}
-          <Row label="Show icon while running">
-            <input
-              type="checkbox"
-              checked={showInDock}
-              onChange={(e) => applyShowInDock(e.target.checked)}
-            />
-          </Row>
-          <Row label="Autohide Dock while open">
-            <input
-              type="checkbox"
-              checked={autohideDock}
-              onChange={(e) => applyDock(e.target.checked)}
-            />
-          </Row>
+          {macOS && (
+            <>
+              <Row label="Keep in Dock">
+                <input
+                  type="checkbox"
+                  checked={keepInDock}
+                  onChange={(e) => applyKeepInDock(e.target.checked)}
+                />
+              </Row>
+              {dockError && <p className="muted pad">{dockError}</p>}
+              <Row label="Show icon while running">
+                <input
+                  type="checkbox"
+                  checked={showInDock}
+                  onChange={(e) => applyShowInDock(e.target.checked)}
+                />
+              </Row>
+              <Row label="Autohide Dock while open">
+                <input
+                  type="checkbox"
+                  checked={autohideDock}
+                  onChange={(e) => applyDock(e.target.checked)}
+                />
+              </Row>
+            </>
+          )}
           <Row label="Open at login">
             <input
               type="checkbox"
@@ -461,9 +467,9 @@ export function SettingsApp() {
             />
           </Row>
           <p className="muted pad">
-            Autohide Dock leaves your system preference alone and restores it when Velocity quits.
-            With keyboard control on: arrows move, Enter opens, Esc goes back. Shift+Tab hides the
-            phone. Right-click the Dock icon for Preferences, or Velocity → Preferences (⌘,).
+            {macOS
+              ? "Autohide Dock leaves your system preference alone and restores it when Velocity quits. With keyboard control on: arrows move, Enter opens, Esc goes back. Shift+Tab hides the phone. Right-click the Dock icon for Preferences, or Velocity → Preferences (⌘,)."
+              : "With keyboard control on: arrows move, Enter opens, Esc goes back. The show/hide hotkey works from anywhere."}
           </p>
         </Section>
 

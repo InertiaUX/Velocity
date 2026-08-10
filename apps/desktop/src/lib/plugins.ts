@@ -1,9 +1,12 @@
 import { invoke } from "@tauri-apps/api/core";
+import type { VelocityPluginManifest } from "@velocity/sdk";
 
 import {
   type ResizeAnchor,
   type ResizePlacement,
 } from "./phoneGeometry";
+import type { PluginInstallPreview } from "./pluginInstall";
+import { installPluginPackage, inspectPluginPackage as inspectPackage } from "./pluginInstall";
 
 export async function placePhone(corner: string) {
   return invoke("place_phone", { corner });
@@ -119,13 +122,12 @@ export async function revealInFinder(path: string) {
   return invoke("reveal_in_finder", { path });
 }
 
-export async function installPluginFromPath(path: string) {
-  return invoke<{
-    id: string;
-    name: string;
-    version: string;
-    description?: string;
-  }>("install_plugin_from_path", { sourcePath: path });
+export async function installPluginFromPath(path: string): Promise<VelocityPluginManifest> {
+  return installPluginPackage(path);
+}
+
+export async function inspectPluginPackage(path: string): Promise<PluginInstallPreview> {
+  return inspectPackage(path);
 }
 
 export async function registerToggleHotkey(hotkey: string) {

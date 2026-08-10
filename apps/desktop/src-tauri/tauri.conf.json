@@ -22,6 +22,8 @@
         "transparent": true,
         "shadow": false,
         "alwaysOnTop": false,
+        "visibleOnAllWorkspaces": true,
+        "acceptFirstMouse": true,
         "skipTaskbar": false,
         "center": false,
         "visible": false
@@ -36,7 +38,12 @@
           "$APPDATA/tile-icons/**",
           "$APPDATA/**",
           "$HOME/Library/Application Support/com.inertiaux.velocity/wallpapers/**",
-          "$HOME/Library/Application Support/com.inertiaux.velocity/tile-icons/**"
+          "$HOME/Library/Application Support/com.inertiaux.velocity/tile-icons/**",
+          "$HOME/Library/Application Support/com.inertiaux.velocity/**",
+          "$HOME/.local/share/com.inertiaux.velocity/wallpapers/**",
+          "$HOME/.local/share/com.inertiaux.velocity/tile-icons/**",
+          "$HOME/.local/share/com.inertiaux.velocity/**",
+          "$HOME/.local/share/**"
         ]
       }
     }

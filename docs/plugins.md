@@ -2,6 +2,8 @@
 
 Full guide: **[DEVELOPERS.md](../DEVELOPERS.md)** · Site: [vty.dev/developers](https://vty.dev/developers.html)
 
+Velocity is a lightweight phone host. Plugins are plain HTML folders that depend on a thin host API.
+
 ## Manifest
 
 ```json
@@ -18,18 +20,22 @@ Full guide: **[DEVELOPERS.md](../DEVELOPERS.md)** · Site: [vty.dev/developers](
 
 ## Host bridge
 
-`window.VelocityPlugin` is injected into the plugin iframe:
+`window.VelocityPlugin` is injected into the plugin iframe (from `@velocity/sdk`):
 
 | Method | Purpose |
 |--------|---------|
 | `ready()` | Tell host the plugin mounted |
-| `toast(message)` | Ask host to show a toast (reserved) |
+| `toast(message)` | Show a toast |
 | `close()` | Return to home |
 | `request(method, params)` | Call a host capability |
 | `onHostMessage(handler)` | Theme / responses |
 
-Built-in host methods include `wallpaper:*` and Spotify helpers used by the example plugin. Details in [DEVELOPERS.md](../DEVELOPERS.md).
+Stable methods: `host:getTheme`, `host:toast`, `shell:openUrl`, `oauth:start`, `oauth:poll`, `wallpaper:*`. Permissions are enforced. Details in [DEVELOPERS.md](../DEVELOPERS.md).
 
 ## Install for users
 
-Copy the plugin folder into the user plugins directory shown in **Plugins** inside Velocity, then tap Refresh.
+1. **Plugins → Install plugin** (folder or `.zip` with `velocity.plugin.json`)
+2. Confirm permissions
+3. Open or **Add to Home**
+
+Devs can also drop a folder into the user plugins directory and tap **Refresh list**. Details in [DEVELOPERS.md](../DEVELOPERS.md).

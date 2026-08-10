@@ -1,7 +1,7 @@
 {
   "name": "@velocity/sdk",
   "version": "0.1.0",
-  "description": "Velocity plugin SDK",
+  "description": "Thin SDK for Velocity plugins — types, bridge inject, host method helpers",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

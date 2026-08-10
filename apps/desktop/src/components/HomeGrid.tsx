@@ -24,17 +24,23 @@ import { CLOCK_FONTS, clockFontFamily, type ClockFontId } from "../lib/clockStyl
 import { usePluginStore } from "../store/pluginStore";
 import {
   importTileIcon,
-  installPluginFromPath,
   launchTarget,
   persistTileIconData,
   resolveAppIcon,
   revealInFinder,
   importWallpaperImage,
 } from "../lib/plugins";
+import {
+  inspectPluginPackage,
+  installPluginPackage,
+  pickPluginPackagePath,
+  type PluginInstallPreview,
+} from "../lib/pluginInstall";
 import { browserQuickLinks, normalizeUrl } from "../lib/browser";
 import { applyFaviconToTile } from "../lib/favicons";
 import { WALLPAPER_PRESETS } from "../lib/wallpapers";
 import { tileIconSrc } from "../lib/tileIcons";
+import { isMacOS } from "../lib/platform";
 import {
   AddAppGlyph,
   AddPageGlyph,
@@ -43,8 +49,10 @@ import {
   WidgetsGlyph,
   builtinGlyphKind,
 } from "./BuiltinIcons";
+import { PluginInstallConfirm } from "./apps/PluginInstallSheet";
 import "./HomeGrid.css";
 import "./WallpaperLayer.css";
+import "./apps/AppScreens.css";
 
 type MenuState = {
   x: number;
@@ -187,6 +195,7 @@ function ClockCustomizeSheet({ onClose }: { onClose: () => void }) {
 }
 
 export function HomeGrid() {
+  const macOS = isMacOS();
   const allTiles = useDeviceStore((s) => s.homeTiles);
   const homePages = useDeviceStore((s) => s.homePages);
   const activePageId = useDeviceStore((s) => s.activePageId);
@@ -237,6 +246,9 @@ export function HomeGrid() {
   const [dockDrop, setDockDrop] = useState<number | null>(null);
   const [adding, setAdding] = useState(false);
   const [addMode, setAddMode] = useState<AddMode>(null);
+  const [pluginPreview, setPluginPreview] = useState<PluginInstallPreview | null>(null);
+  const [pluginInstallBusy, setPluginInstallBusy] = useState(false);
+  const [pluginInstallError, setPluginInstallError] = useState<string | null>(null);
   const [menu, setMenu] = useState<MenuState>(null);
   const [addKbIndex, setAddKbIndex] = useState(0);
   const [bookmarkUrl, setBookmarkUrl] = useState("");
@@ -563,7 +575,12 @@ export function HomeGrid() {
         directory: false,
         title: "Choose a picture for this app",
         filters: [
-          { name: "Images & Apps", extensions: ["png", "jpg", "jpeg", "gif", "webp", "icns", "app"] },
+          {
+            name: "Images & Apps",
+            extensions: macOS
+              ? ["png", "jpg", "jpeg", "gif", "webp", "icns", "app"]
+              : ["png", "jpg", "jpeg", "gif", "webp", "ico", "exe"],
+          },
         ],
       });
       if (!selected || Array.isArray(selected)) return;
@@ -658,10 +675,25 @@ export function HomeGrid() {
   };
 
   const pickPlugin = async () => {
-    setAdding(true);
     setAddMode(null);
-    const install = async (path: string) => {
-      const plugin = await installPluginFromPath(path);
+    setPluginInstallError(null);
+    try {
+      const path = await pickPluginPackagePath();
+      if (!path) return;
+      const preview = await inspectPluginPackage(path);
+      setPluginPreview(preview);
+    } catch (err) {
+      console.error(err);
+      setPluginInstallError(err instanceof Error ? err.message : String(err));
+    }
+  };
+
+  const confirmPluginInstall = async () => {
+    if (!pluginPreview) return;
+    setPluginInstallBusy(true);
+    setPluginInstallError(null);
+    try {
+      const plugin = await installPluginPackage(pluginPreview.sourcePath);
       await refreshPlugins();
       const tileId = plugin.id === "com.velocity.spotify" ? "spotify" : plugin.id;
       const tilesNow = useDeviceStore.getState().homeTiles;
@@ -676,31 +708,12 @@ export function HomeGrid() {
           pageId: activePageId,
         });
       }
+      setPluginPreview(null);
       enterEdit();
-    };
-    try {
-      const selected = await open({
-        multiple: false,
-        directory: true,
-        title: "Choose a Velocity plugin folder",
-      });
-      if (!selected || Array.isArray(selected)) return;
-      await install(selected);
-    } catch {
-      try {
-        const file = await open({
-          multiple: false,
-          directory: false,
-          title: "Choose velocity.plugin.json",
-          filters: [{ name: "Velocity plugin", extensions: ["json"] }],
-        });
-        if (!file || Array.isArray(file)) return;
-        await install(file);
-      } catch (err) {
-        console.error(err);
-      }
+    } catch (err) {
+      setPluginInstallError(err instanceof Error ? err.message : String(err));
     } finally {
-      setAdding(false);
+      setPluginInstallBusy(false);
     }
   };
 
@@ -1013,7 +1026,10 @@ export function HomeGrid() {
         <div className="add-sheet" role="dialog" aria-label="Add App">
           <div className="add-sheet-card">
             <p className="add-sheet-title">Add App</p>
-            <p className="add-sheet-lede">Install a plugin, pick a Mac app, or bookmark a web page.</p>
+            <p className="add-sheet-lede">
+              Install a plugin folder or .zip, pick a {macOS ? "Mac app" : "system app"}, or bookmark
+              a web page.
+            </p>
             <button
               type="button"
               className={`add-sheet-option ${addKbIndex === 0 ? "is-kb-selected" : ""}`}
@@ -1025,7 +1041,7 @@ export function HomeGrid() {
               </span>
               <span>
                 <strong>Install a plugin</strong>
-                <small>Folder with velocity.plugin.json</small>
+                <small>Folder or .zip with velocity.plugin.json</small>
               </span>
             </button>
             <button
@@ -1381,7 +1397,7 @@ export function HomeGrid() {
                 setMenu(null);
               }}
             >
-              Reveal in Finder
+              Show in folder
             </button>
           )}
           {menu.tile && (
@@ -1477,6 +1493,38 @@ export function HomeGrid() {
                 <span className="tile-title">{dragGhost.tile.title}</span>
               </>
             )}
+          </div>
+        </div>
+      )}
+
+      {pluginPreview && (
+        <PluginInstallConfirm
+          preview={pluginPreview}
+          busy={pluginInstallBusy}
+          error={pluginInstallError}
+          accent={accent}
+          onCancel={() => {
+            setPluginPreview(null);
+            setPluginInstallError(null);
+          }}
+          onConfirm={() => void confirmPluginInstall()}
+        />
+      )}
+      {!pluginPreview && pluginInstallError && (
+        <div className="plugin-install-sheet" role="alertdialog">
+          <div className="plugin-install-card">
+            <p className="plugin-install-eyebrow">Install failed</p>
+            <p className="plugin-install-error">{pluginInstallError}</p>
+            <div className="plugin-install-actions stack">
+              <button
+                type="button"
+                className="block-btn"
+                style={{ background: accent }}
+                onClick={() => setPluginInstallError(null)}
+              >
+                OK
+              </button>
+            </div>
           </div>
         </div>
       )}

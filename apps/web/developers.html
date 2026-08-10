@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Create Velocity plugins: HTML/JS tiles inside the desktop phone. Manifest, host bridge, install path."
+      content="Build Velocity plugins: HTML tools that depend on a thin host API. Manifest, bridge, permissions, install path."
     />
     <meta property="og:title" content="Developers · Velocity" />
     <meta property="og:url" content="https://vty.dev/developers.html" />
@@ -36,8 +36,8 @@
       <p class="doc-eyebrow">Developers</p>
       <h1 class="doc-title">Create a plugin</h1>
       <p class="doc-lede">
-        Plugins are small HTML apps that run as tiles inside Velocity. Ship a manifest, an entry page,
-        and talk to the host through <code>window.VelocityPlugin</code>.
+        Velocity is a lightweight phone host. Plugins are small HTML apps that run as tiles and talk
+        to the shell through <code>window.VelocityPlugin</code> — no bundler required.
       </p>
       <p class="doc-lede muted">
         Full markdown guide on GitHub:
@@ -58,7 +58,7 @@
         <p>A plugin is a folder with:</p>
         <ul>
           <li><code>velocity.plugin.json</code>: id, name, entry, permissions</li>
-          <li><code>ui/index.html</code>: UI in a sandboxed iframe</li>
+          <li>Entry HTML (default <code>ui/index.html</code>): UI in a sandboxed iframe</li>
           <li><code>assets/icon.svg</code>: optional home icon</li>
         </ul>
         <p>
@@ -109,19 +109,24 @@ document.getElementById("done").onclick = () =&gt; api.close();</code></pre>
       </section>
 
       <section id="install">
-        <h2>Install while developing</h2>
+        <h2>Install</h2>
         <ol>
-          <li>Open Velocity → <strong>Plugins</strong>.</li>
-          <li>Copy your folder into the user plugins directory.</li>
-          <li>Tap <strong>Refresh</strong>, then open the tile from home.</li>
+          <li>Open Velocity → <strong>Plugins</strong> → <strong>Install plugin</strong>.</li>
+          <li>Pick a plugin <strong>folder</strong> or <strong>.zip</strong> (must include <code>velocity.plugin.json</code>).</li>
+          <li>Review name, version, and permissions, then confirm.</li>
+          <li>Open the plugin or add it to Home.</li>
         </ol>
+        <p>Dev shortcut: copy into the user plugins folder and tap <strong>Refresh list</strong>.</p>
         <p>Typical path on macOS:</p>
         <pre><code>~/Library/Application Support/com.inertiaux.velocity/plugins/</code></pre>
       </section>
 
       <section id="bridge">
         <h2>Host bridge</h2>
-        <p><code>window.VelocityPlugin</code> is injected automatically.</p>
+        <p>
+          <code>window.VelocityPlugin</code> is injected automatically from
+          <code>@velocity/sdk</code>. Permissions are enforced; unknown methods fail.
+        </p>
         <div class="doc-table-wrap">
           <table>
             <thead>
@@ -141,7 +146,7 @@ document.getElementById("done").onclick = () =&gt; api.close();</code></pre>
               </tr>
               <tr>
                 <td><code>toast(message)</code></td>
-                <td>Ask the host for a toast (reserved)</td>
+                <td>Show a short toast</td>
               </tr>
               <tr>
                 <td><code>request(method, params?)</code></td>
@@ -154,7 +159,11 @@ document.getElementById("done").onclick = () =&gt; api.close();</code></pre>
             </tbody>
           </table>
         </div>
-        <p>Common <code>request</code> methods: <code>wallpaper:get</code>, <code>wallpaper:apply</code>, <code>wallpaper:clear</code>.</p>
+        <p>
+          Stable <code>request</code> methods:
+          <code>host:getTheme</code>, <code>host:toast</code>, <code>shell:openUrl</code>,
+          <code>oauth:start</code>, <code>oauth:poll</code>, <code>wallpaper:*</code>.
+        </p>
         <p>
           Permissions you may declare: <code>network</code>, <code>media</code>, <code>wallpaper</code>,
           plus reserved <code>filesystem</code>, <code>notifications</code>, <code>clipboard</code>.

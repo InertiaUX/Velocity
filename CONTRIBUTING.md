@@ -1,6 +1,6 @@
 # Contributing
 
-Unofficial desktop phone companion by [InertiaUX](https://github.com/InertiaUX).
+Unofficial desktop phone shell by [InertiaUX](https://github.com/InertiaUX) — a lightweight host for HTML plugins.
 Keep the phone-as-window UX, stay MIT-clean, and don't claim Rockstar/Take-Two affiliation.
 
 ## Before you start
@@ -17,7 +17,7 @@ Keep the phone-as-window UX, stay MIT-clean, and don't claim Rockstar/Take-Two a
 | Plugins | Host bridge, SDK types, example plugins |
 | Web | Homepage (`apps/web`), release links |
 | Docs | Install, architecture, security notes |
-| Packaging | macOS notarization, Windows/Linux builds |
+| Packaging | Code signing / notarization; release CI polish |
 
 ## Dev
 

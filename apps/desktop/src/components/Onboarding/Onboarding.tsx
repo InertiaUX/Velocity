@@ -24,6 +24,7 @@ import {
   type SuggestedApp,
 } from "../../lib/plugins";
 import { useOnboardingKeyboard } from "../../lib/useOnboardingKeyboard";
+import { isMacOS } from "../../lib/platform";
 import "./Onboarding.css";
 
 const COLORS: { id: PhoneColor; label: string }[] = [
@@ -51,6 +52,7 @@ function hotkeyParts(hotkey: string): string[] {
 }
 
 export function Onboarding() {
+  const macOS = isMacOS();
   const [step, setStep] = useState(0);
   const [suggested, setSuggested] = useState<SuggestedApp[]>([]);
   const [addDiscord, setAddDiscord] = useState(true);
@@ -190,9 +192,11 @@ export function Onboarding() {
     try {
       await placePhone(corner);
       await setAlwaysOnTop(alwaysOnTop);
-      await setShowInDock(showInDock || keepInDock);
-      await setKeepInDock(keepInDock);
-      await setDockAutohideWhileActive(autohideDock, true);
+      if (macOS) {
+        await setShowInDock(showInDock || keepInDock);
+        await setKeepInDock(keepInDock);
+        await setDockAutohideWhileActive(autohideDock, true);
+      }
       await setOpenAtLogin(openAtLogin);
     } catch {
       /* web preview */
@@ -349,30 +353,34 @@ export function Onboarding() {
               onChange={(e) => setOpenAtLoginPref(e.target.checked)}
             />
           </label>
-          <label className="pref toggle" data-kb-item>
-            <span>Keep Velocity in the Dock</span>
-            <input
-              type="checkbox"
-              checked={keepInDock}
-              onChange={(e) => setKeepInDockPref(e.target.checked)}
-            />
-          </label>
-          <label className="pref toggle" data-kb-item>
-            <span>Show icon while running</span>
-            <input
-              type="checkbox"
-              checked={showInDock}
-              onChange={(e) => setShowInDockPref(e.target.checked)}
-            />
-          </label>
-          <label className="pref toggle" data-kb-item>
-            <span>Autohide Dock while open</span>
-            <input
-              type="checkbox"
-              checked={autohideDock}
-              onChange={(e) => setAutohideDock(e.target.checked)}
-            />
-          </label>
+          {macOS && (
+            <>
+              <label className="pref toggle" data-kb-item>
+                <span>Keep Velocity in the Dock</span>
+                <input
+                  type="checkbox"
+                  checked={keepInDock}
+                  onChange={(e) => setKeepInDockPref(e.target.checked)}
+                />
+              </label>
+              <label className="pref toggle" data-kb-item>
+                <span>Show icon while running</span>
+                <input
+                  type="checkbox"
+                  checked={showInDock}
+                  onChange={(e) => setShowInDockPref(e.target.checked)}
+                />
+              </label>
+              <label className="pref toggle" data-kb-item>
+                <span>Autohide Dock while open</span>
+                <input
+                  type="checkbox"
+                  checked={autohideDock}
+                  onChange={(e) => setAutohideDock(e.target.checked)}
+                />
+              </label>
+            </>
+          )}
           <label className="pref toggle" data-kb-item>
             <span>Keyboard control</span>
             <input
@@ -471,8 +479,9 @@ export function Onboarding() {
 
           {hotkeyRegError && (
             <p className="practice-hint">
-              macOS may be blocking this shortcut. Allow Velocity in System Settings → Privacy &amp;
-              Security → Accessibility, then try again.
+              {macOS
+                ? "macOS may be blocking this shortcut. Allow Velocity in System Settings → Privacy & Security → Accessibility, then try again."
+                : "This shortcut may be blocked by the OS or another app. Try a different hotkey, then try again."}
             </p>
           )}
 

@@ -69,7 +69,7 @@ async function connect() {
   state = { ...state, clientId, verifier, oauthState };
   saveState();
 
-  const port = await hostRequest("spotify:oauthStart", { state: oauthState });
+  const port = await hostRequest("oauth:start", { state: oauthState });
   const redirect = `http://127.0.0.1:${port}/callback`;
   const url =
     "https://accounts.spotify.com/authorize?" +
@@ -82,7 +82,7 @@ async function connect() {
       code_challenge_method: "S256",
       code_challenge: challenge,
     });
-  await hostRequest("spotify:openUrl", { url });
+  await hostRequest("shell:openUrl", { url });
 
   els.status.textContent = "Waiting for authorization…";
   const result = await pollOAuth();
@@ -98,7 +98,7 @@ async function connect() {
 
 async function pollOAuth() {
   for (let i = 0; i < 90; i++) {
-    const result = await hostRequest("spotify:oauthPoll", {});
+    const result = await hostRequest("oauth:poll", {});
     if (result) return result;
     await new Promise((r) => setTimeout(r, 1000));
   }

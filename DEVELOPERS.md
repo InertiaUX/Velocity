@@ -1,16 +1,25 @@
 # Developing Velocity plugins
 
-HTML/JS tiles inside Velocity’s phone. Site: [vty.dev/developers](https://vty.dev/developers.html). Types: [`packages/sdk`](packages/sdk).
+Velocity is a **lightweight phone host**. Features ship as HTML plugins that depend on a thin host API (`window.VelocityPlugin` / `@velocity/sdk`), not on forking the shell.
+
+Site: [vty.dev/developers](https://vty.dev/developers.html). Types: [`packages/sdk`](packages/sdk).
+
+## Host guarantees
+
+- Stable `postMessage` types (`plugin:*` / `velocity:*`) and the injected `window.VelocityPlugin` bridge
+- Capability checks: declared `permissions` are enforced; unknown `request` methods fail
+- No bundler required: a folder + HTML/JS is enough
+- Shell stays small (window, tiles, hotkeys, theme); product features prefer plugins over built-ins
 
 ## What a plugin is
 
 | File | Role |
 |------|------|
 | `velocity.plugin.json` | Manifest (id, name, entry, permissions) |
-| `ui/index.html` | UI in a sandboxed iframe |
+| Entry HTML (default `ui/index.html`) | UI in a sandboxed iframe |
 | `assets/icon.svg` | Optional home icon |
 
-The host injects `window.VelocityPlugin` (theme, close, wallpaper, OAuth helpers, etc.).
+The host injects `window.VelocityPlugin` from `@velocity/sdk` (single source of truth).
 
 Examples: [`plugins/spotify`](plugins/spotify), [`plugins/aura-wallpapers`](plugins/aura-wallpapers).
 
@@ -106,20 +115,41 @@ api.onHostMessage((msg) => {
 document.getElementById("done").onclick = () => api.close();
 ```
 
-Relative `<script src="./…">` files are **inlined** by the host when the plugin loads. Keep entries local to the plugin folder (no `http://` script tags for your app code).
+Relative `<script src="./…">` files are **inlined** by the host when the plugin loads (paths are relative to the entry HTML directory). Keep entries local to the plugin folder (no `http://` script tags for your app code).
 
-## Install while developing
+## Install (users)
 
-1. Open Velocity → **Plugins**.
-2. Note the user plugins directory (or use **Install** if available).
-3. Copy your plugin folder into that directory (folder name can match `id`).
-4. Tap **Refresh**, then open the tile from the home screen.
+1. Open Velocity → **Plugins** → **Install plugin** (or Home → Add App → Install a plugin).
+2. Choose a **folder** or **`.zip`** that contains `velocity.plugin.json`.
+3. Review the name, version, and **permissions**, then confirm.
+4. Open the plugin or **Add to Home**.
+
+Updates: install again with the same `id` (Velocity replaces the previous copy).  
+Dev shortcut: copy a folder into the user plugins directory and tap **Refresh list**, or use **Open plugins folder**.
 
 Typical user plugins path on macOS:
 
 ```text
-~/Library/Application Support/com.inertiaux.velocity/plugins/
+~/Library/Application Support/com.inertiaux.velocity/plugins/{manifest.id}/
 ```
+
+What to ship:
+
+```text
+com.example.hello/          # or zip of this folder
+  velocity.plugin.json
+  ui/
+    index.html
+    app.js
+  assets/
+    icon.svg
+```
+
+## Install while developing
+
+1. Keep the plugin folder anywhere while you edit.
+2. **Install plugin** from Plugins (folder or zip), or copy into the user plugins directory.
+3. Tap **Refresh list**, then **Open** / **Add to Home**.
 
 Bundled examples live under [`plugins/`](plugins/) in this repository during development.
 
@@ -130,7 +160,7 @@ Bundled examples live under [`plugins/`](plugins/) in this repository during dev
 | `id` | yes | Stable reverse-DNS id |
 | `name` | yes | Label on the home screen |
 | `version` | yes | Semver string |
-| `entry` | yes | HTML path relative to plugin root |
+| `entry` | yes | HTML path relative to plugin root (default `ui/index.html`) |
 | `description` | no | Short summary |
 | `icon` | no | Image path (svg/png) |
 | `permissions` | no | See below |
@@ -139,12 +169,12 @@ Bundled examples live under [`plugins/`](plugins/) in this repository during dev
 
 ### Permissions
 
-Declare only what you need:
+Declare only what you need. The host **enforces** these before running the matching methods:
 
 | Permission | Intent |
 |------------|--------|
-| `network` | Outbound network / OAuth-style flows |
-| `media` | Media control helpers |
+| `network` | Outbound open-URL / OAuth-style flows |
+| `media` | Media control helpers (reserved for future host methods) |
 | `filesystem` | Reserved |
 | `notifications` | Reserved |
 | `clipboard` | Reserved |
@@ -152,13 +182,13 @@ Declare only what you need:
 
 ## Host bridge (`window.VelocityPlugin`)
 
-Injected automatically. Do not ship your own copy unless you are writing tooling with [`@velocity/sdk`](packages/sdk).
+Injected automatically from `@velocity/sdk`. Do not ship your own copy unless you are writing tooling with [`createPluginBridge`](packages/sdk).
 
 | Method | Purpose |
 |--------|---------|
 | `ready()` | Signal that the UI mounted |
 | `close()` | Return to the home screen |
-| `toast(message)` | Ask the host to show a toast (reserved / best-effort) |
+| `toast(message)` | Show a short toast in the phone |
 | `request(method, params?)` | Promise-based host capability call |
 | `onHostMessage(handler)` | Subscribe to host → plugin messages; returns unsubscribe |
 | `id` | Plugin id string |
@@ -176,14 +206,20 @@ Injected automatically. Do not ship your own copy unless you are writing tooling
 
 ### Built-in `request` methods
 
-| Method | Params | Notes |
-|--------|--------|-------|
-| `wallpaper:get` | - | Current wallpaper state |
-| `wallpaper:apply` | `{ css? \| value? \| imageDataUrl? \| presetId?, id?, pluginId? }` | Needs `wallpaper` permission |
-| `wallpaper:clear` | - | Reset wallpaper |
-| `spotify:oauthStart` | `{ state }` | Spotify example only |
-| `spotify:oauthPoll` | - | Spotify example only |
-| `spotify:openUrl` | `{ url }` | Open URL via host |
+| Method | Permission | Params | Notes |
+|--------|------------|--------|-------|
+| `host:getTheme` | - | - | Current theme |
+| `host:toast` | - | `{ message }` | Same as `toast()` |
+| `shell:openUrl` | `network` | `{ url }` | Open URL via host |
+| `oauth:start` | `network` | `{ state }` | Loopback OAuth listener; returns port |
+| `oauth:poll` | `network` | - | Poll loopback result |
+| `wallpaper:get` | `wallpaper` | - | Current wallpaper state |
+| `wallpaper:apply` | `wallpaper` | `{ css? \| value? \| imageDataUrl? \| presetId?, id?, pluginId? }` | Apply wallpaper |
+| `wallpaper:clear` | `wallpaper` | - | Reset wallpaper |
+
+Aliases kept for the Spotify example: `spotify:oauthStart`, `spotify:oauthPoll`, `spotify:openUrl` (same permissions as the generic methods). Prefer the generic names in new plugins.
+
+Unknown methods reject with an error (they do not silently succeed).
 
 ## Wallpaper plugins
 
@@ -221,7 +257,7 @@ See [`plugins/aura-wallpapers`](plugins/aura-wallpapers).
 
 ## TypeScript
 
-Use [`packages/sdk`](packages/sdk) (`@velocity/sdk`) for manifest/host types and `createPluginBridge` when building tooling. Runtime plugins still get the injected bridge in the iframe.
+Use [`packages/sdk`](packages/sdk) (`@velocity/sdk`) for manifest/host types, `bridgeInjectScript` / `injectPluginBridge`, and `createPluginBridge` when building tooling. Runtime plugins still get the injected bridge in the iframe.
 
 ```ts
 import type { VelocityPluginManifest } from "@velocity/sdk";

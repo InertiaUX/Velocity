@@ -4,7 +4,16 @@ import { openUrl } from "@tauri-apps/plugin-opener";
 import { useDeviceStore } from "../../store/deviceStore";
 import { DEFAULT_WALLPAPER } from "../../lib/wallpapers";
 import { AppNav } from "./SettingsApp";
-import type { VelocityHostMessage, VelocityPluginMessage } from "@velocity/sdk";
+import {
+  injectPluginBridge,
+  permissionForMethod,
+  pluginHasPermission,
+  type VelocityHostMessage,
+  type VelocityHostTheme,
+  type VelocityPermission,
+  type VelocityPluginManifest,
+  type VelocityPluginMessage,
+} from "@velocity/sdk";
 import "./AppScreens.css";
 
 export function PluginHost({
@@ -20,10 +29,13 @@ export function PluginHost({
   const phoneColor = useDeviceStore((s) => s.phoneColor);
   const [html, setHtml] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const [permissions, setPermissions] = useState<VelocityPermission[]>([]);
   const frameRef = useRef<HTMLIFrameElement>(null);
+  const toastTimer = useRef<number | null>(null);
 
   const theme = useMemo(
-    () => ({ mode: themeMode, accent, phoneColor }),
+    () => ({ mode: themeMode, accent, phoneColor }) satisfies VelocityHostTheme,
     [themeMode, accent, phoneColor],
   );
 
@@ -31,8 +43,10 @@ export function PluginHost({
     let cancelled = false;
     (async () => {
       try {
-        const prepared = await loadPluginDocument(pluginId);
-        if (!cancelled) setHtml(injectBridge(prepared, pluginId));
+        const loaded = await loadPluginDocument(pluginId);
+        if (cancelled) return;
+        setPermissions(loaded.permissions);
+        setHtml(injectPluginBridge(loaded.html, pluginId));
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : String(e));
       }
@@ -43,17 +57,32 @@ export function PluginHost({
   }, [pluginId]);
 
   useEffect(() => {
+    const showToast = (message: string) => {
+      setToast(message);
+      if (toastTimer.current) window.clearTimeout(toastTimer.current);
+      toastTimer.current = window.setTimeout(() => setToast(null), 2400);
+    };
+
     const onMessage = async (event: MessageEvent) => {
       const data = event.data as VelocityPluginMessage & { pluginId?: string };
       if (!data || typeof data !== "object") return;
       if (!String(data.type || "").startsWith("plugin:")) return;
+      if (data.pluginId && data.pluginId !== pluginId) return;
+
       if (data.type === "plugin:close") openApp(null);
+      if (data.type === "plugin:toast") showToast(data.message);
       if (data.type === "plugin:ready") {
         post({ type: "velocity:ready", theme });
       }
       if (data.type === "plugin:request") {
         try {
-          const result = await handlePluginRequest(data.method, data.params);
+          const result = await handlePluginRequest(
+            data.method,
+            data.params,
+            permissions,
+            theme,
+            showToast,
+          );
           post({ type: "velocity:response", id: data.id, ok: true, data: result });
         } catch (err) {
           post({
@@ -66,8 +95,11 @@ export function PluginHost({
       }
     };
     window.addEventListener("message", onMessage);
-    return () => window.removeEventListener("message", onMessage);
-  }, [openApp, theme]);
+    return () => {
+      window.removeEventListener("message", onMessage);
+      if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    };
+  }, [openApp, theme, permissions, pluginId]);
 
   useEffect(() => {
     post({ type: "velocity:theme", theme });
@@ -94,24 +126,56 @@ export function PluginHost({
           srcDoc={html}
         />
       )}
+      {toast && (
+        <div className="plugin-toast" role="status">
+          {toast}
+        </div>
+      )}
     </div>
   );
 }
 
-async function handlePluginRequest(method: string, params: unknown) {
+async function handlePluginRequest(
+  method: string,
+  params: unknown,
+  permissions: readonly VelocityPermission[],
+  theme: VelocityHostTheme,
+  showToast: (message: string) => void,
+) {
+  const required = permissionForMethod(method);
+  if (required === undefined) {
+    throw new Error(`Unknown host method: ${method}`);
+  }
+  if (!pluginHasPermission(permissions, required)) {
+    throw new Error(`Missing permission: ${required}`);
+  }
+
   const p = (params || {}) as Record<string, string>;
   switch (method) {
+    case "host:getTheme":
+      return theme;
+    case "host:toast": {
+      const message = typeof p.message === "string" ? p.message : String((params as { message?: unknown })?.message ?? "");
+      if (!message) throw new Error("host:toast requires message");
+      showToast(message);
+      return true;
+    }
+    case "oauth:start":
     case "spotify:oauthStart": {
       const port = await invoke<number>("start_oauth_listener", {
         expectedState: p.state || "",
       });
       return port;
     }
+    case "oauth:poll":
     case "spotify:oauthPoll":
       return invoke("poll_oauth_result");
-    case "spotify:openUrl":
+    case "shell:openUrl":
+    case "spotify:openUrl": {
+      if (!p.url) throw new Error("shell:openUrl requires url");
       await openUrl(p.url);
       return true;
+    }
     case "wallpaper:get":
       return useDeviceStore.getState().wallpaper;
     case "wallpaper:apply": {
@@ -151,28 +215,51 @@ async function handlePluginRequest(method: string, params: unknown) {
       return useDeviceStore.getState().wallpaper;
     }
     default:
-      return { acknowledged: true, method };
+      throw new Error(`Unknown host method: ${method}`);
   }
 }
 
-async function loadPluginDocument(pluginId: string): Promise<string> {
+async function loadPluginDocument(pluginId: string): Promise<{
+  html: string;
+  permissions: VelocityPermission[];
+  entry: string;
+}> {
+  let manifest: VelocityPluginManifest | undefined;
+  try {
+    const plugins = await invoke<VelocityPluginManifest[]>("list_plugins");
+    manifest = plugins.find((p) => p.id === pluginId);
+  } catch {
+    /* browser preview */
+  }
+
+  const entry = manifest?.entry?.trim() || "ui/index.html";
+  const entryDir = entry.includes("/") ? entry.slice(0, entry.lastIndexOf("/")) : "";
+  const permissions = (manifest?.permissions || []) as VelocityPermission[];
+
   try {
     const html = await invoke<string>("read_plugin_file", {
       pluginId,
-      relative: "ui/index.html",
+      relative: entry,
     });
-    return inlineScripts(html, async (rel) =>
-      invoke<string>("read_plugin_file", { pluginId, relative: `ui/${rel}` }),
+    const prepared = await inlineScripts(html, async (rel) =>
+      invoke<string>("read_plugin_file", {
+        pluginId,
+        relative: entryDir ? `${entryDir}/${rel}` : rel,
+      }),
     );
+    return { html: prepared, permissions, entry };
   } catch {
-    const res = await fetch(`/plugins/${pluginId.split(".").pop()}/ui/index.html`);
+    const folder = pluginId.split(".").pop();
+    const res = await fetch(`/plugins/${folder}/${entry}`);
     if (!res.ok) throw new Error(`Plugin UI not found: ${pluginId}`);
     const html = await res.text();
-    return inlineScripts(html, async (rel) => {
-      const r = await fetch(`/plugins/${pluginId.split(".").pop()}/ui/${rel}`);
+    const prepared = await inlineScripts(html, async (rel) => {
+      const path = entryDir ? `${entryDir}/${rel}` : rel;
+      const r = await fetch(`/plugins/${folder}/${path}`);
       if (!r.ok) throw new Error(`Missing ${rel}`);
       return r.text();
     });
+    return { html: prepared, permissions, entry };
   }
 }
 
@@ -189,40 +276,4 @@ async function inlineScripts(
     out = out.replace(match[0], `<script>${js}</script>`);
   }
   return out;
-}
-
-function injectBridge(html: string, pluginId: string): string {
-  const bridge = `<script>
-(function(){
-  const pluginId = ${JSON.stringify(pluginId)};
-  const handlers = new Set();
-  function postToHost(msg){ parent.postMessage(Object.assign({}, msg, {pluginId}), '*'); }
-  window.addEventListener('message', function(ev){
-    var data = ev.data;
-    if(!data || typeof data !== 'object' || !String(data.type||'').startsWith('velocity:')) return;
-    handlers.forEach(function(h){ h(data); });
-  });
-  window.VelocityPlugin = {
-    id: pluginId,
-    postToHost: postToHost,
-    onHostMessage: function(h){ handlers.add(h); return function(){ handlers.delete(h); }; },
-    ready: function(){ postToHost({ type: 'plugin:ready', pluginId: pluginId }); },
-    toast: function(message){ postToHost({ type: 'plugin:toast', message: message }); },
-    close: function(){ postToHost({ type: 'plugin:close' }); },
-    request: function(method, params){
-      var id = crypto.randomUUID();
-      return new Promise(function(resolve, reject){
-        var unsub = window.VelocityPlugin.onHostMessage(function(msg){
-          if(msg.type !== 'velocity:response' || msg.id !== id) return;
-          unsub();
-          if(msg.ok) resolve(msg.data); else reject(new Error(msg.error||'failed'));
-        });
-        postToHost({ type: 'plugin:request', id: id, method: method, params: params });
-      });
-    }
-  };
-})();
-</script>`;
-  if (html.includes("</head>")) return html.replace("</head>", `${bridge}</head>`);
-  return bridge + html;
 }

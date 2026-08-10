@@ -24,15 +24,190 @@ const OAUTH_PORT: u16 = 18766;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub struct PluginWallpaperOffer {
+    pub id: String,
+    pub name: String,
+    pub css: Option<String>,
+    pub image: Option<String>,
+    pub preview: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct PluginManifest {
     pub id: String,
     pub name: String,
     pub version: String,
     pub description: Option<String>,
     pub icon: Option<String>,
+    #[serde(default = "default_plugin_entry")]
     pub entry: String,
     pub permissions: Option<Vec<String>>,
+    pub provides: Option<Vec<String>>,
+    pub wallpapers: Option<Vec<PluginWallpaperOffer>>,
     pub path: Option<String>,
+}
+
+fn default_plugin_entry() -> String {
+    "ui/index.html".into()
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PluginInstallPreview {
+    pub id: String,
+    pub name: String,
+    pub version: String,
+    pub description: Option<String>,
+    pub permissions: Vec<String>,
+    pub provides: Vec<String>,
+    pub already_installed: bool,
+    pub installed_version: Option<String>,
+    /// Absolute path the installer should pass to `install_plugin_from_path`
+    /// (folder, zip, or velocity.plugin.json).
+    pub source_path: String,
+}
+
+/// Resolve a user-picked path to a plugin root directory.
+/// Returns (plugin_root, cleanup_temp_dir_if_any).
+fn resolve_plugin_package(source_path: &PathBuf) -> Result<(PathBuf, Option<PathBuf>), String> {
+    if !source_path.exists() {
+        return Err(format!("Path not found: {}", source_path.display()));
+    }
+
+    if source_path.is_file() {
+        let name = source_path
+            .file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or("")
+            .to_ascii_lowercase();
+        if name == "velocity.plugin.json" {
+            let parent = source_path
+                .parent()
+                .ok_or("Invalid plugin path")?
+                .to_path_buf();
+            if read_manifest(&parent).is_none() {
+                return Err("Invalid velocity.plugin.json".into());
+            }
+            return Ok((parent, None));
+        }
+        if name.ends_with(".zip") {
+            let temp = std::env::temp_dir().join(format!(
+                "velocity-plugin-{}",
+                uuid::Uuid::new_v4()
+            ));
+            extract_plugin_zip(source_path, &temp)?;
+            let root = find_plugin_root(&temp)
+                .ok_or_else(|| {
+                    let _ = std::fs::remove_dir_all(&temp);
+                    "Zip does not contain velocity.plugin.json".to_string()
+                })?;
+            return Ok((root, Some(temp)));
+        }
+        return Err("Choose a plugin folder, .zip, or velocity.plugin.json".into());
+    }
+
+    // Directory: manifest here, or a single nested folder with a manifest.
+    if read_manifest(source_path).is_some() {
+        return Ok((source_path.clone(), None));
+    }
+    if let Ok(entries) = std::fs::read_dir(source_path) {
+        let dirs: Vec<PathBuf> = entries
+            .flatten()
+            .map(|e| e.path())
+            .filter(|p| p.is_dir())
+            .collect();
+        if dirs.len() == 1 {
+            if read_manifest(&dirs[0]).is_some() {
+                return Ok((dirs[0].clone(), None));
+            }
+        }
+        for dir in &dirs {
+            if read_manifest(dir).is_some() {
+                return Ok((dir.clone(), None));
+            }
+        }
+    }
+    Err("Folder is missing velocity.plugin.json".into())
+}
+
+fn find_plugin_root(root: &PathBuf) -> Option<PathBuf> {
+    if read_manifest(root).is_some() {
+        return Some(root.clone());
+    }
+    let entries = std::fs::read_dir(root).ok()?;
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            if let Some(found) = find_plugin_root(&path) {
+                return Some(found);
+            }
+        }
+    }
+    None
+}
+
+fn extract_plugin_zip(zip_path: &PathBuf, dest: &PathBuf) -> Result<(), String> {
+    std::fs::create_dir_all(dest).map_err(|e| e.to_string())?;
+    let file = std::fs::File::open(zip_path).map_err(|e| format!("Cannot open zip: {e}"))?;
+    let mut archive = zip::ZipArchive::new(file).map_err(|e| format!("Invalid zip: {e}"))?;
+    for i in 0..archive.len() {
+        let mut entry = archive
+            .by_index(i)
+            .map_err(|e| format!("Zip read error: {e}"))?;
+        let name = entry
+            .enclosed_name()
+            .ok_or_else(|| "Zip entry has an unsafe path".to_string())?
+            .to_path_buf();
+        let out = dest.join(&name);
+        if entry.is_dir() {
+            std::fs::create_dir_all(&out).map_err(|e| e.to_string())?;
+            continue;
+        }
+        if let Some(parent) = out.parent() {
+            std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+        }
+        let mut outfile = std::fs::File::create(&out).map_err(|e| e.to_string())?;
+        std::io::copy(&mut entry, &mut outfile).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+fn preview_from_manifest(
+    app: &AppHandle,
+    manifest: &PluginManifest,
+    source_path: &PathBuf,
+) -> PluginInstallPreview {
+    let installed = list_plugins(app.clone())
+        .ok()
+        .and_then(|plugins| plugins.into_iter().find(|p| p.id == manifest.id));
+    PluginInstallPreview {
+        id: manifest.id.clone(),
+        name: manifest.name.clone(),
+        version: manifest.version.clone(),
+        description: manifest.description.clone(),
+        permissions: manifest.permissions.clone().unwrap_or_default(),
+        provides: manifest.provides.clone().unwrap_or_default(),
+        already_installed: installed.is_some(),
+        installed_version: installed.map(|p| p.version),
+        source_path: source_path.to_string_lossy().to_string(),
+    }
+}
+
+#[tauri::command]
+fn inspect_plugin_package(
+    app: AppHandle,
+    source_path: String,
+) -> Result<PluginInstallPreview, String> {
+    let path = PathBuf::from(&source_path);
+    let (root, temp) = resolve_plugin_package(&path)?;
+    let manifest = read_manifest(&root).ok_or("Invalid plugin: missing velocity.plugin.json")?;
+    // Preview uses the original user path so install can re-resolve (and re-extract zip).
+    let preview = preview_from_manifest(&app, &manifest, &path);
+    if let Some(temp) = temp {
+        let _ = std::fs::remove_dir_all(temp);
+    }
+    Ok(preview)
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -86,6 +261,9 @@ struct PhoneUiState {
     autohide_dock: bool,
     always_on_top: bool,
     animating: bool,
+    /// Our source of truth for Shift+Tab. `is_visible()` is unreliable off the main thread
+    /// (and for transparent macOS windows after a slide animation).
+    shown: bool,
 }
 
 type OAuthSlot = Arc<Mutex<Option<OAuthResult>>>;
@@ -621,6 +799,130 @@ fn place_phone(
     Ok(())
 }
 
+/// Convert the Tauri NSWindow into an NSPanel and configure it for fullscreen Spaces.
+///
+/// Plain NSWindows ignore `FullScreenAuxiliary` on modern macOS — only panels can
+/// appear over another app's fullscreen Space. Re-applies flags on every show
+/// (hide/show can reset collection behavior / level).
+#[cfg(target_os = "macos")]
+fn macos_apply_space_overlay(window: &WebviewWindow, _elevate: bool, order_front: bool) {
+    use objc2::runtime::{AnyClass, AnyObject, Bool, ClassBuilder, Sel};
+    use objc2::{sel, ClassType, MainThreadMarker};
+    use objc2_app_kit::{
+        NSMainMenuWindowLevel, NSPanel, NSWindow, NSWindowCollectionBehavior, NSWindowStyleMask,
+    };
+    use std::sync::atomic::{AtomicBool, Ordering};
+    use std::sync::OnceLock;
+
+    static CONVERTED: AtomicBool = AtomicBool::new(false);
+    static PANEL_CLASS: OnceLock<&'static AnyClass> = OnceLock::new();
+
+    extern "C" {
+        fn object_setClass(obj: *mut AnyObject, cls: *const AnyClass) -> *const AnyClass;
+    }
+
+    unsafe extern "C" fn can_become_key_window(_this: *mut AnyObject, _cmd: Sel) -> Bool {
+        Bool::YES
+    }
+    unsafe extern "C" fn can_become_main_window(_this: *mut AnyObject, _cmd: Sel) -> Bool {
+        Bool::YES
+    }
+
+    let panel_class = *PANEL_CLASS.get_or_init(|| {
+        let name = c"VelocityPhonePanel";
+        if let Some(existing) = AnyClass::get(name) {
+            return existing;
+        }
+        let mut builder = ClassBuilder::new(name, NSPanel::class())
+            .expect("VelocityPhonePanel ClassBuilder");
+        unsafe {
+            builder.add_method(
+                sel!(canBecomeKeyWindow),
+                can_become_key_window as unsafe extern "C" fn(_, _) -> _,
+            );
+            builder.add_method(
+                sel!(canBecomeMainWindow),
+                can_become_main_window as unsafe extern "C" fn(_, _) -> _,
+            );
+        }
+        builder.register()
+    });
+
+    let Ok(ptr) = window.ns_window() else {
+        return;
+    };
+    if ptr.is_null() {
+        return;
+    }
+    if MainThreadMarker::new().is_none() {
+        return;
+    }
+
+    let behavior = NSWindowCollectionBehavior::CanJoinAllSpaces
+        | NSWindowCollectionBehavior::FullScreenAuxiliary
+        | NSWindowCollectionBehavior::CanJoinAllApplications
+        | NSWindowCollectionBehavior::Stationary;
+
+    unsafe {
+        let ns_window: &NSWindow = &*(ptr as *const NSWindow);
+
+        // Drop any previous child-of-anchor link from older builds.
+        if let Some(parent) = ns_window.parentWindow() {
+            parent.removeChildWindow(ns_window);
+        }
+
+        if !CONVERTED.swap(true, Ordering::SeqCst) {
+            object_setClass(ptr as *mut AnyObject, panel_class);
+        }
+
+        // Keep borderless (transparent phone) and mark as nonactivating panel so
+        // showing over a fullscreen game doesn't yank that app out of its Space.
+        ns_window.setStyleMask(
+            NSWindowStyleMask::Borderless | NSWindowStyleMask::NonactivatingPanel,
+        );
+
+        // NSPanel-specific (safe after class swizzle).
+        let panel: &NSPanel = &*(ptr as *const NSPanel);
+        panel.setFloatingPanel(true);
+        panel.setBecomesKeyOnlyIfNeeded(false);
+        panel.setWorksWhenModal(true);
+
+        ns_window.setCollectionBehavior(behavior);
+        ns_window.setLevel(NSMainMenuWindowLevel);
+        ns_window.setHidesOnDeactivate(false);
+        ns_window.setMovableByWindowBackground(false);
+
+        if order_front {
+            ns_window.orderFrontRegardless();
+        }
+    }
+}
+
+#[cfg(not(target_os = "macos"))]
+fn macos_apply_space_overlay(_window: &WebviewWindow, _elevate: bool, _order_front: bool) {}
+
+#[cfg(target_os = "macos")]
+fn macos_is_on_active_space(window: &WebviewWindow) -> bool {
+    with_window_main(window, |window| {
+        let Ok(ptr) = window.ns_window() else {
+            return true;
+        };
+        if ptr.is_null() {
+            return true;
+        }
+        unsafe {
+            let ns_window: &objc2_app_kit::NSWindow = &*(ptr as *const objc2_app_kit::NSWindow);
+            ns_window.isOnActiveSpace()
+        }
+    })
+    .unwrap_or(true)
+}
+
+#[cfg(not(target_os = "macos"))]
+fn macos_is_on_active_space(_window: &WebviewWindow) -> bool {
+    true
+}
+
 fn apply_always_on_top(window: &WebviewWindow, enabled: bool) -> Result<(), String> {
     // NSWindow level changes must run on the main thread (macOS 26 traps otherwise).
     // Shift+Tab toggles from a worker thread, so marshal AppKit work here.
@@ -628,27 +930,8 @@ fn apply_always_on_top(window: &WebviewWindow, enabled: bool) -> Result<(), Stri
         window
             .set_always_on_top(enabled)
             .map_err(|e| e.to_string())?;
-
-        // Transparent macOS windows can drop the floating level after hide/show.
-        // Set NSWindow level directly so "Keep phone on top" sticks.
-        #[cfg(target_os = "macos")]
-        {
-            use objc2::msg_send;
-            use objc2::runtime::AnyObject;
-            use objc2_app_kit::{NSFloatingWindowLevel, NSNormalWindowLevel};
-            let ptr = window.ns_window().map_err(|e| e.to_string())?;
-            if !ptr.is_null() {
-                let ns_window = ptr as *mut AnyObject;
-                let level = if enabled {
-                    NSFloatingWindowLevel
-                } else {
-                    NSNormalWindowLevel
-                };
-                unsafe {
-                    let _: () = msg_send![ns_window, setLevel: level];
-                }
-            }
-        }
+        let _ = window.set_visible_on_all_workspaces(true);
+        macos_apply_space_overlay(&window, enabled, false);
         Ok(())
     })?
 }
@@ -667,7 +950,12 @@ fn set_always_on_top(
 
 #[tauri::command]
 fn show_phone(window: WebviewWindow) -> Result<(), String> {
-    window.show().map_err(|e| e.to_string())
+    with_window_main(&window, |window| {
+        window.show().map_err(|e| e.to_string())?;
+        let _ = window.set_visible_on_all_workspaces(true);
+        macos_apply_space_overlay(window, true, true);
+        Ok(())
+    })?
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -812,92 +1100,279 @@ fn resize_phone(
     })
 }
 
+#[cfg(not(target_os = "macos"))]
 fn ease_in_cubic(t: f64) -> f64 {
     t * t * t
 }
 
+#[cfg(not(target_os = "macos"))]
 fn ease_out_cubic(t: f64) -> f64 {
     let u = 1.0 - t;
     1.0 - u * u * u
 }
 
-fn animate_phone_down(window: &WebviewWindow) -> Result<(), String> {
-    let _ = browser_hide_webview(&window.app_handle());
-    let (scale, pos, size) = with_window_main(window, |window| {
-        let scale = window.scale_factor().unwrap_or(1.0);
-        let pos = window.outer_position().map_err(|e| e.to_string())?;
-        let size = window.outer_size().map_err(|e| e.to_string())?;
-        Ok::<_, String>((scale, pos, size))
+const PHONE_SLIDE_HIDE_SECS: f64 = 0.26;
+const PHONE_SLIDE_SHOW_SECS: f64 = 0.30;
+
+/// AppKit-driven slide. Much smoother than per-frame Tauri `set_position` + sync
+/// main-thread hops (those looked stepped / laggy).
+#[cfg(target_os = "macos")]
+fn macos_slide_frame(
+    window: &WebviewWindow,
+    delta_y_cocoa: f64,
+    duration_secs: f64,
+) -> Result<(), String> {
+    with_window_main(window, move |window| {
+        use objc2::msg_send;
+        use objc2::runtime::AnyObject;
+        use objc2_foundation::{NSPoint, NSRect, NSSize};
+
+        let ptr = window.ns_window().map_err(|e| e.to_string())?;
+        if ptr.is_null() {
+            return Err("missing ns_window".to_string());
+        }
+        let ns_window = ptr as *mut AnyObject;
+        unsafe {
+            let frame: NSRect = msg_send![ns_window, frame];
+            let target = NSRect {
+                origin: NSPoint {
+                    x: frame.origin.x,
+                    y: frame.origin.y + delta_y_cocoa,
+                },
+                size: NSSize {
+                    width: frame.size.width,
+                    height: frame.size.height,
+                },
+            };
+            // NSAnimationContext + animator uses Core Animation timing instead of
+            // our old stepped loop.
+            let _: () = msg_send![objc2::class!(NSAnimationContext), beginGrouping];
+            let ctx: *mut AnyObject =
+                msg_send![objc2::class!(NSAnimationContext), currentContext];
+            let _: () = msg_send![ctx, setDuration: duration_secs];
+            let _: () = msg_send![ctx, setAllowsImplicitAnimation: true];
+            let animator: *mut AnyObject = msg_send![ns_window, animator];
+            let _: () = msg_send![animator, setFrame: target, display: true];
+            let _: () = msg_send![objc2::class!(NSAnimationContext), endGrouping];
+        }
+        Ok::<(), String>(())
     })??;
-    let travel = size.height as i32 + (64.0 * scale) as i32;
-    let steps = 22;
-    for i in 1..=steps {
-        let t = i as f64 / steps as f64;
-        let y = pos.y + (travel as f64 * ease_in_cubic(t)).round() as i32;
-        let x = pos.x;
-        with_window_main(window, move |window| {
-            let _ = window.set_position(PhysicalPosition::new(x, y));
-        })?;
-        thread::sleep(Duration::from_millis(12));
-    }
-    with_window_main(window, |window| window.hide().map_err(|e| e.to_string()))?
+    // Animation runs on the main runloop; wait on this worker thread.
+    thread::sleep(Duration::from_secs_f64(duration_secs + 0.02));
+    Ok(())
 }
 
-fn animate_phone_up(window: &WebviewWindow, corner: &str) -> Result<(), String> {
+#[cfg(target_os = "macos")]
+fn macos_set_frame_y_delta(window: &WebviewWindow, delta_y_cocoa: f64) -> Result<(), String> {
+    with_window_main(window, move |window| {
+        use objc2::msg_send;
+        use objc2::runtime::AnyObject;
+        use objc2_foundation::{NSPoint, NSRect, NSSize};
+
+        let ptr = window.ns_window().map_err(|e| e.to_string())?;
+        if ptr.is_null() {
+            return Err("missing ns_window".to_string());
+        }
+        let ns_window = ptr as *mut AnyObject;
+        unsafe {
+            let frame: NSRect = msg_send![ns_window, frame];
+            let target = NSRect {
+                origin: NSPoint {
+                    x: frame.origin.x,
+                    y: frame.origin.y + delta_y_cocoa,
+                },
+                size: NSSize {
+                    width: frame.size.width,
+                    height: frame.size.height,
+                },
+            };
+            let _: () = msg_send![ns_window, setFrame: target, display: true];
+        }
+        Ok::<(), String>(())
+    })?
+}
+
+#[cfg(target_os = "macos")]
+fn macos_frame_travel_points(window: &WebviewWindow) -> Result<f64, String> {
+    with_window_main(window, |window| {
+        use objc2::msg_send;
+        use objc2::runtime::AnyObject;
+        use objc2_foundation::NSRect;
+
+        let ptr = window.ns_window().map_err(|e| e.to_string())?;
+        if ptr.is_null() {
+            return Err("missing ns_window".to_string());
+        }
+        let ns_window = ptr as *mut AnyObject;
+        let frame: NSRect = unsafe { msg_send![ns_window, frame] };
+        Ok::<f64, String>(frame.size.height + 64.0)
+    })?
+}
+
+/// Fallback when AppKit animation isn't available: time-based slides with
+/// fire-and-forget main-thread moves (no sync wait per frame).
+#[cfg(not(target_os = "macos"))]
+fn animate_slide_fallback(
+    window: &WebviewWindow,
+    x: i32,
+    from_y: i32,
+    to_y: i32,
+    duration: Duration,
+    ease_out: bool,
+) -> Result<(), String> {
+    use std::time::Instant;
+    let start = Instant::now();
+    let mut last_y = from_y;
+    while start.elapsed() < duration {
+        let t = (start.elapsed().as_secs_f64() / duration.as_secs_f64()).clamp(0.0, 1.0);
+        let e = if ease_out {
+            ease_out_cubic(t)
+        } else {
+            ease_in_cubic(t)
+        };
+        let y = (from_y as f64 + (to_y - from_y) as f64 * e).round() as i32;
+        if y != last_y {
+            last_y = y;
+            let w = window.clone();
+            let _ = w.app_handle().run_on_main_thread(move || {
+                let _ = w.set_position(PhysicalPosition::new(x, y));
+            });
+        }
+        thread::sleep(Duration::from_millis(8));
+    }
+    with_window_main(window, move |window| {
+        let _ = window.set_position(PhysicalPosition::new(x, to_y));
+    })?;
+    Ok(())
+}
+
+fn force_hide_window(window: &WebviewWindow) -> Result<(), String> {
+    with_window_main(window, |window| {
+        window.hide().map_err(|e| e.to_string())?;
+        // Transparent / floating NSWindows sometimes stay on the window list after
+        // Tauri hide(); orderOut makes the tuck-away definitive for Shift+Tab.
+        #[cfg(target_os = "macos")]
+        {
+            use objc2::msg_send;
+            use objc2::runtime::AnyObject;
+            if let Ok(ptr) = window.ns_window() {
+                if !ptr.is_null() {
+                    let ns_window = ptr as *mut AnyObject;
+                    unsafe {
+                        let _: () = msg_send![ns_window, orderOut: std::ptr::null::<AnyObject>()];
+                    }
+                }
+            }
+        }
+        Ok(())
+    })?
+}
+
+fn animate_phone_down(window: &WebviewWindow) -> Result<(), String> {
+    let _ = browser_hide_webview(&window.app_handle());
+
+    #[cfg(target_os = "macos")]
+    {
+        // Cocoa Y grows upward — slide off the bottom by decreasing origin.y.
+        let travel = macos_frame_travel_points(window)?;
+        macos_slide_frame(window, -travel, PHONE_SLIDE_HIDE_SECS)?;
+        return force_hide_window(window);
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        let (scale, pos, size) = with_window_main(window, |window| {
+            let scale = window.scale_factor().unwrap_or(1.0);
+            let pos = window.outer_position().map_err(|e| e.to_string())?;
+            let size = window.outer_size().map_err(|e| e.to_string())?;
+            Ok::<_, String>((scale, pos, size))
+        })??;
+        let travel = size.height as i32 + (64.0 * scale) as i32;
+        animate_slide_fallback(
+            window,
+            pos.x,
+            pos.y,
+            pos.y + travel,
+            Duration::from_secs_f64(PHONE_SLIDE_HIDE_SECS),
+            false,
+        )?;
+        force_hide_window(window)
+    }
+}
+
+fn animate_phone_up(window: &WebviewWindow, corner: &str, elevate: bool) -> Result<(), String> {
     let corner = corner.to_string();
     // Show before reading geometry - hidden windows often fail position APIs on macOS,
     // which previously aborted restore and left Velocity "stuck" after Shift+Tab.
-    let prep = with_window_main(window, {
-        let corner = corner.clone();
-        move |window| {
-            let scale = window.scale_factor().unwrap_or(1.0);
-            let _ = window.unminimize();
-            window.show().map_err(|e| e.to_string())?;
-            position_phone(window, &corner);
-            let _ = window.set_focus();
-
-            let size = window.outer_size().ok();
-            let travel = size
-                .map(|s| s.height as i32 + (64.0 * scale) as i32)
-                .unwrap_or((800.0 * scale) as i32);
-
-            let Ok(final_pos) = window.outer_position() else {
-                position_phone(window, &corner);
-                let _ = window.set_focus();
-                return Ok::<_, String>(None);
-            };
-
-            // Start from below so the rise is visible.
-            let start = PhysicalPosition::new(final_pos.x, final_pos.y + travel);
-            let _ = window.set_position(start);
-            Ok(Some((travel, final_pos, start)))
-        }
-    })??;
-
-    let Some((travel, final_pos, start)) = prep else {
-        return Ok(());
-    };
-
-    // Slightly slower rise than the hide (~360ms) so reappear feels smoother.
-    let steps = 26;
-    for i in 1..=steps {
-        let t = i as f64 / steps as f64;
-        let y = start.y - (travel as f64 * ease_out_cubic(t)).round() as i32;
-        let x = final_pos.x;
-        with_window_main(window, move |window| {
-            let _ = window.set_position(PhysicalPosition::new(x, y));
-        })?;
-        thread::sleep(Duration::from_millis(14));
-    }
-
     with_window_main(window, {
         let corner = corner.clone();
         move |window| {
+            let _ = window.unminimize();
+            window.show().map_err(|e| e.to_string())?;
+            let _ = window.set_visible_on_all_workspaces(true);
+            // orderFrontRegardless + space overlay so the phone can appear over a
+            // fullscreen game without yanking that app out of its Space (set_focus can).
+            macos_apply_space_overlay(window, elevate, true);
             position_phone(window, &corner);
-            let _ = window.set_focus();
+            Ok::<_, String>(())
         }
-    })?;
-    Ok(())
+    })??;
+
+    #[cfg(target_os = "macos")]
+    {
+        let travel = macos_frame_travel_points(window)?;
+        // Park below, then animate up into the resting corner.
+        macos_set_frame_y_delta(window, -travel)?;
+        macos_slide_frame(window, travel, PHONE_SLIDE_SHOW_SECS)?;
+        with_window_main(window, {
+            let corner = corner.clone();
+            move |window| {
+                position_phone(window, &corner);
+                macos_apply_space_overlay(window, elevate, true);
+            }
+        })?;
+        return Ok(());
+    }
+
+    #[cfg(not(target_os = "macos"))]
+    {
+        let prep = with_window_main(window, {
+            let corner = corner.clone();
+            move |window| {
+                let scale = window.scale_factor().unwrap_or(1.0);
+                position_phone(window, &corner);
+                let size = window.outer_size().ok();
+                let travel = size
+                    .map(|s| s.height as i32 + (64.0 * scale) as i32)
+                    .unwrap_or((800.0 * scale) as i32);
+                let Ok(final_pos) = window.outer_position() else {
+                    return Ok::<_, String>(None);
+                };
+                let start = PhysicalPosition::new(final_pos.x, final_pos.y + travel);
+                let _ = window.set_position(start);
+                Ok(Some((final_pos, start)))
+            }
+        })??;
+
+        let Some((final_pos, start)) = prep else {
+            return Ok(());
+        };
+        animate_slide_fallback(
+            window,
+            final_pos.x,
+            start.y,
+            final_pos.y,
+            Duration::from_secs_f64(PHONE_SLIDE_SHOW_SECS),
+            true,
+        )?;
+        with_window_main(window, {
+            let corner = corner.clone();
+            move |window| {
+                position_phone(window, &corner);
+            }
+        })?;
+        Ok(())
+    }
 }
 
 fn run_minimize(window: &WebviewWindow, dock: &DockSlot, ui: &PhoneUiSlot) -> Result<(), String> {
@@ -911,10 +1386,21 @@ fn run_minimize(window: &WebviewWindow, dock: &DockSlot, ui: &PhoneUiSlot) -> Re
     let result = (|| {
         animate_phone_down(window)?;
         release_dock_autohide(&window.app_handle(), dock);
+        if let Ok(mut guard) = ui.lock() {
+            guard.shown = false;
+        }
         let _ = window.emit("velocity://visibility", false);
         Ok(())
     })();
-    if let Ok(mut guard) = ui.lock() {
+    if result.is_err() {
+        // Best-effort: don't leave the phone stuck mid-slide.
+        let _ = force_hide_window(window);
+        if let Ok(mut guard) = ui.lock() {
+            guard.shown = false;
+            guard.animating = false;
+        }
+        let _ = window.emit("velocity://visibility", false);
+    } else if let Ok(mut guard) = ui.lock() {
         guard.animating = false;
     }
     result
@@ -941,15 +1427,21 @@ fn run_restore(
         .map(|g| g.always_on_top)
         .unwrap_or(false);
     let result = (|| {
-        animate_phone_up(window, &corner)?;
+        animate_phone_up(window, &corner, always_on_top)?;
         // Re-apply after show - macOS often resets window level on hide/show.
         apply_always_on_top(window, always_on_top)?;
         enforce_dock_autohide(&window.app_handle(), dock, autohide_dock);
+        if let Ok(mut guard) = ui.lock() {
+            guard.shown = true;
+        }
         let _ = window.emit("velocity://visibility", true);
         Ok(())
     })();
     if let Ok(mut guard) = ui.lock() {
         guard.animating = false;
+        if result.is_ok() {
+            guard.shown = true;
+        }
     }
     result
 }
@@ -961,10 +1453,10 @@ fn run_toggle(
     dock: &DockSlot,
     ui: &PhoneUiSlot,
 ) -> Result<bool, String> {
-    let (corner, autohide) = {
+    let (corner, autohide, shown) = {
         let mut guard = ui.lock().map_err(|e| e.to_string())?;
         if guard.animating {
-            return Ok(window.is_visible().unwrap_or(false));
+            return Ok(guard.shown);
         }
         if let Some(c) = corner {
             guard.corner = c;
@@ -972,17 +1464,23 @@ fn run_toggle(
         if let Some(a) = autohide_dock {
             guard.autohide_dock = a;
         }
-        (guard.corner.clone(), guard.autohide_dock)
+        (guard.corner.clone(), guard.autohide_dock, guard.shown)
     };
 
-    let visible = window.is_visible().unwrap_or(false);
-    if visible {
-        run_minimize(window, dock, ui)?;
-        Ok(false)
-    } else {
-        run_restore(window, corner, autohide, dock, ui)?;
-        Ok(true)
+    // Phone can be "shown" on the desktop Space while the user is in another
+    // app's fullscreen Space — Shift+Tab should re-surface there, not hide.
+    if shown {
+        let on_active = macos_is_on_active_space(window);
+        let visibly_here = window.is_visible().unwrap_or(false) && on_active;
+        if visibly_here {
+            run_minimize(window, dock, ui)?;
+            return Ok(false);
+        }
+        // Treat as hidden for this Space and bring it back on top.
     }
+
+    run_restore(window, corner, autohide, dock, ui)?;
+    Ok(true)
 }
 
 #[tauri::command]
@@ -1266,8 +1764,12 @@ fn set_keep_in_dock(keep: bool) -> Result<(), String> {
 fn emit_open_preferences(app: &AppHandle) {
     let _ = app.emit("velocity://open-preferences", ());
     if let Some(window) = app.get_webview_window("main") {
-        let _ = window.show();
-        let _ = window.set_focus();
+        let _ = with_window_main(&window, |window| {
+            let _ = window.show();
+            let _ = window.set_visible_on_all_workspaces(true);
+            macos_apply_space_overlay(window, true, true);
+            let _ = window.set_focus();
+        });
     }
 }
 
@@ -1436,16 +1938,20 @@ fn register_toggle_hotkey(
     hotkey: String,
     slot: tauri::State<'_, HotkeySlot>,
 ) -> Result<(), String> {
-    // Unregister previous
+    let shortcut = parse_hotkey(&hotkey)?;
+
+    // Drop any previous binding first (same or different key). Avoid stacking handlers.
     if let Ok(mut guard) = slot.lock() {
         if let Some(prev) = guard.take() {
             if let Ok(sc) = parse_hotkey(&prev) {
                 let _ = app.global_shortcut().unregister(sc);
             }
         }
+        // Also clear this exact shortcut in case a prior register failed mid-way.
+        let _ = app.global_shortcut().unregister(shortcut);
         *guard = Some(hotkey.clone());
     }
-    let shortcut = parse_hotkey(&hotkey)?;
+
     app.global_shortcut()
         .on_shortcut(shortcut, move |app, _shortcut, event| {
             if event.state != ShortcutState::Pressed {
@@ -1593,11 +2099,12 @@ fn detect_suggested_apps() -> Result<Vec<SuggestedApp>, String> {
 #[tauri::command]
 fn list_plugins(app: AppHandle) -> Result<Vec<PluginManifest>, String> {
     let mut plugins = Vec::new();
+    // User plugins first so installs/updates override bundled examples with the same id.
+    let user = plugins_dir(&app)?;
+    collect_plugins_from(&user, &mut plugins);
     if let Some(bundled) = bundled_plugins_dir(&app) {
         collect_plugins_from(&bundled, &mut plugins);
     }
-    let user = plugins_dir(&app)?;
-    collect_plugins_from(&user, &mut plugins);
     Ok(plugins)
 }
 
@@ -1633,22 +2140,35 @@ fn read_plugin_file(app: AppHandle, plugin_id: String, relative: String) -> Resu
 
 #[tauri::command]
 fn install_plugin_from_path(app: AppHandle, source_path: String) -> Result<PluginManifest, String> {
-    let source = PathBuf::from(&source_path);
-    let source = if source.is_file() {
-        source
-            .parent()
-            .ok_or("Invalid plugin path")?
-            .to_path_buf()
-    } else {
-        source
-    };
-    let manifest = read_manifest(&source).ok_or("Invalid plugin: missing velocity.plugin.json")?;
-    let dest = plugins_dir(&app)?.join(&manifest.id);
-    if dest.exists() {
-        std::fs::remove_dir_all(&dest).map_err(|e| e.to_string())?;
+    let path = PathBuf::from(&source_path);
+    let (root, temp) = resolve_plugin_package(&path)?;
+    let result = (|| {
+        let manifest =
+            read_manifest(&root).ok_or("Invalid plugin: missing velocity.plugin.json")?;
+        if manifest.id.trim().is_empty() {
+            return Err("Plugin manifest is missing id".into());
+        }
+        if manifest.name.trim().is_empty() {
+            return Err("Plugin manifest is missing name".into());
+        }
+        let entry_path = root.join(&manifest.entry);
+        if !entry_path.exists() {
+            return Err(format!(
+                "Entry not found: {} (check manifest.entry)",
+                manifest.entry
+            ));
+        }
+        let dest = plugins_dir(&app)?.join(&manifest.id);
+        if dest.exists() {
+            std::fs::remove_dir_all(&dest).map_err(|e| e.to_string())?;
+        }
+        copy_dir(&root, &dest)?;
+        read_manifest(&dest).ok_or_else(|| "Failed to read installed plugin".into())
+    })();
+    if let Some(temp) = temp {
+        let _ = std::fs::remove_dir_all(temp);
     }
-    copy_dir(&source, &dest)?;
-    read_manifest(&dest).ok_or_else(|| "Failed to read installed plugin".into())
+    result
 }
 
 #[tauri::command]
@@ -2279,6 +2799,7 @@ pub fn run() {
         autohide_dock: false,
         always_on_top: false,
         animating: false,
+        shown: true,
     }));
 
     tauri::Builder::default()
@@ -2288,10 +2809,18 @@ pub fn run() {
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
-        .plugin(tauri_plugin_autostart::init(
-            tauri_plugin_autostart::MacosLauncher::LaunchAgent,
-            None::<Vec<&'static str>>,
-        ))
+        .plugin({
+            #[cfg(target_os = "macos")]
+            {
+                tauri_plugin_autostart::Builder::new()
+                    .macos_launcher(tauri_plugin_autostart::MacosLauncher::LaunchAgent)
+                    .build()
+            }
+            #[cfg(not(target_os = "macos"))]
+            {
+                tauri_plugin_autostart::Builder::new().build()
+            }
+        })
         .manage(oauth_slot)
         .manage(dock_slot.clone())
         .manage(hotkey_slot)
@@ -2316,6 +2845,7 @@ pub fn run() {
             get_plugin_entry,
             read_plugin_file,
             install_plugin_from_path,
+            inspect_plugin_package,
             reveal_in_finder,
             check_for_updates,
             start_oauth_listener,
@@ -2346,7 +2876,23 @@ pub fn run() {
             install_app_menu(&app.handle().clone())?;
             if let Some(window) = app.get_webview_window("main") {
                 position_phone(&window, "bottom-right");
+                let _ = window.set_visible_on_all_workspaces(true);
+                // NSPanel conversion only sticks for fullscreen Spaces after the app
+                // has been Accessory at least once (Tauri / AppKit quirk).
+                #[cfg(target_os = "macos")]
+                {
+                    let _ = app
+                        .handle()
+                        .set_activation_policy(tauri::ActivationPolicy::Accessory);
+                }
                 let _ = window.show();
+                macos_apply_space_overlay(&window, true, true);
+                #[cfg(target_os = "macos")]
+                {
+                    let _ = app
+                        .handle()
+                        .set_activation_policy(tauri::ActivationPolicy::Regular);
+                }
             }
             Ok(())
         })

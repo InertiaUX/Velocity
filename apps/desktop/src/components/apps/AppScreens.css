@@ -2,6 +2,7 @@
   height: 100%;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .app-nav {
@@ -195,12 +196,153 @@
   font-weight: 700;
   color: #06110c;
 }
+.block-btn.ghost-btn {
+  background: transparent;
+  color: var(--v-ink);
+  border: 1px solid var(--v-line);
+  font-weight: 600;
+}
 .block-btn.danger-btn {
   background: #ff4d3a;
   color: #fff;
 }
 .block-btn.danger-btn:disabled {
   opacity: 0.55;
+}
+
+.plugin-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0 4px;
+}
+.plugin-actions .block-btn {
+  width: 100%;
+  margin: 0;
+}
+.plugin-dir-hint,
+.plugin-dev-hint {
+  margin-top: 10px;
+  font-size: 12px;
+  word-break: break-all;
+}
+.plugin-item-links {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+}
+.plugin-item-links .linkish {
+  margin: 0 4px 4px;
+  font-size: 12px;
+}
+
+.plugin-install-sheet {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 12px;
+  background: rgba(6, 10, 14, 0.45);
+}
+.plugin-install-card {
+  width: 100%;
+  max-height: 92%;
+  overflow: auto;
+  border-radius: 18px;
+  padding: 16px;
+  background: var(--v-bg-elevated, #161b20);
+  border: 1px solid var(--v-line);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+}
+.plugin-install-eyebrow {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--v-ink-muted);
+}
+.plugin-install-title {
+  margin: 6px 0 4px;
+  font-size: 20px;
+  line-height: 1.2;
+}
+.plugin-install-meta {
+  margin: 0;
+  font-size: 12px;
+  color: var(--v-ink-muted);
+  word-break: break-all;
+}
+.plugin-install-desc {
+  margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--v-ink-muted);
+}
+.plugin-install-section {
+  margin-top: 14px;
+}
+.plugin-install-label {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.plugin-perm-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.plugin-perm-list li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--v-bg, #101418);
+  border: 1px solid var(--v-line);
+  font-size: 12px;
+}
+.plugin-perm-list strong {
+  font-size: 12px;
+}
+.plugin-perm-list span {
+  color: var(--v-ink-muted);
+}
+.plugin-install-warn {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(240, 213, 106, 0.12);
+  color: var(--v-ink);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.plugin-install-error {
+  margin: 10px 0 0;
+  color: #ff6b5a;
+  font-size: 13px;
+}
+.plugin-install-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 16px;
+}
+.plugin-install-actions.stack {
+  grid-template-columns: 1fr;
+}
+.plugin-install-actions .block-btn {
+  width: 100%;
+  margin: 0;
+}
+.plugin-install-actions .linkish {
+  justify-self: center;
+  margin-top: 4px;
 }
 
 .update-card {
@@ -308,10 +450,29 @@
   height: 100%;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 .plugin-frame {
   flex: 1;
   border: 0;
   width: 100%;
   background: transparent;
+}
+.plugin-toast {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  max-width: calc(100% - 32px);
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(18, 22, 26, 0.92);
+  color: #f2f4f6;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.35;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  pointer-events: none;
+  z-index: 4;
 }
