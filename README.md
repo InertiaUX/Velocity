@@ -24,9 +24,9 @@ It’s a natural fit for the FiveM community, and for livestreamers who want qui
 ## Screenshots
 
 <p align="center">
-  <img src="docs/screenshots/phone-home.jpg" width="280" alt="Velocity home screen">
+  <img src="docs/screenshots/phone-home-dev.jpg" width="280" alt="Velocity home screen">
   &nbsp;
-  <img src="docs/screenshots/phone-tiles.jpg" width="280" alt="Velocity home tiles">
+  <img src="docs/screenshots/phone-tiles-dev.jpg" width="280" alt="Velocity home tiles">
 </p>
 
 ## Support
