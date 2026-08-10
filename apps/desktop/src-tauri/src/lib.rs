@@ -1244,7 +1244,7 @@ fn animate_slide_fallback(
         if y != last_y {
             last_y = y;
             let w = window.clone();
-            let _ = w.app_handle().run_on_main_thread(move || {
+            let _ = w.clone().app_handle().run_on_main_thread(move || {
                 let _ = w.set_position(PhysicalPosition::new(x, y));
             });
         }
