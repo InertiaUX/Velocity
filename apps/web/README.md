@@ -15,7 +15,7 @@ npm run build:web    # → apps/web/dist
 The homepage picks a release asset from the visitor's OS (Mac arm64 zip, Windows NSIS, Linux AppImage). Optional overrides in `apps/web/.env`:
 
 ```bash
-VITE_DOWNLOAD_URL=https://github.com/InertiaUX/Velocity/releases/download/v0.1.1/Velocity-0.1.1-macOS-arm64.zip
+VITE_DOWNLOAD_URL=https://github.com/InertiaUX/Velocity/releases/download/v0.1.2/Velocity-0.1.2-macOS-arm64.zip
 VITE_SUPPORT_URL=https://github.com/sponsors/InertiaUX
 ```
 

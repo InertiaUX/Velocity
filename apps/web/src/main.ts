@@ -1,6 +1,6 @@
 import "./styles.css";
 
-const RELEASE_VERSION = "0.1.1";
+const RELEASE_VERSION = "0.1.2";
 const RELEASE_TAG = `v${RELEASE_VERSION}`;
 const RELEASES_PAGE = "https://github.com/InertiaUX/Velocity/releases";
 const RELEASE_BASE = `https://github.com/InertiaUX/Velocity/releases/download/${RELEASE_TAG}`;

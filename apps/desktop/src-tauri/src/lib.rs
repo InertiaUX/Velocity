@@ -372,6 +372,9 @@ fn copy_dir(src: &PathBuf, dst: &PathBuf) -> Result<(), String> {
     Ok(())
 }
 
+const DEFAULT_UPDATE_FEED: &str =
+    "https://raw.githubusercontent.com/InertiaUX/Velocity/main/docs/update-feed.json";
+
 fn ureq_get(url: &str) -> Result<String, String> {
     if url.starts_with("file://") {
         let path = url.trim_start_matches("file://");
@@ -381,7 +384,14 @@ fn ureq_get(url: &str) -> Result<String, String> {
         return std::fs::read_to_string(url).map_err(|e| e.to_string());
     }
     let output = std::process::Command::new("curl")
-        .args(["-fsSL", url])
+        .args([
+            "-fsSL",
+            "-A",
+            "Velocity-UpdateCheck",
+            "-H",
+            "Accept: application/json",
+            url,
+        ])
         .output()
         .map_err(|e| format!("Failed to fetch updates: {e}"))?;
     if !output.status.success() {
@@ -2241,15 +2251,9 @@ fn evaluate_update_feed(current: &str, body: &str) -> Result<UpdateInfo, String>
 #[tauri::command]
 fn check_for_updates(app: AppHandle, feed_url: Option<String>) -> Result<UpdateInfo, String> {
     let current = app.package_info().version.to_string();
-    let Some(url) = feed_url.filter(|u| !u.is_empty()) else {
-        return Ok(UpdateInfo {
-            available: false,
-            current_version: current,
-            latest_version: None,
-            release_url: None,
-            notes: Some("Update feed not configured yet.".into()),
-        });
-    };
+    let url = feed_url
+        .filter(|u| !u.is_empty())
+        .unwrap_or_else(|| DEFAULT_UPDATE_FEED.to_string());
 
     let body = ureq_get(&url)?;
     evaluate_update_feed(&current, &body)

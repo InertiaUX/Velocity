@@ -485,7 +485,7 @@ export function SettingsApp() {
             <Row label="Feed URL">
               <input
                 className="text-input"
-                placeholder="(optional until public release)"
+                placeholder="Default: docs/update-feed.json on GitHub"
                 value={updateFeedUrl}
                 onChange={(e) => setUpdateFeedUrl(e.target.value)}
               />
@@ -498,7 +498,7 @@ export function SettingsApp() {
             <div className="update-card">
               {update.available ? (
                 <>
-                  <strong>Update available</strong>
+                  <strong>New update available</strong>
                   <p>
                     {update.currentVersion} → {update.latestVersion}
                   </p>

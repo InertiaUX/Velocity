@@ -552,7 +552,8 @@ export const useDeviceStore = create<DeviceState>()(
       corner: "bottom-right",
       alwaysOnTop: false,
       checkForUpdates: true,
-      updateFeedUrl: "",
+      updateFeedUrl:
+        "https://raw.githubusercontent.com/InertiaUX/Velocity/main/docs/update-feed.json",
       developerMode: false,
       autohideDock: false,
       showInDock: true,

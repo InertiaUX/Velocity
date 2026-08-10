@@ -36,7 +36,7 @@ export function UpdateBanner() {
   return (
     <div className="update-banner fade-up">
       <div>
-        <strong>Update available</strong>
+        <strong>New update available</strong>
         <span>
           v{info.latestVersion} ready
         </span>

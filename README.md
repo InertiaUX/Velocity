@@ -5,7 +5,7 @@
 <h1 align="center">Velocity</h1>
 
 <p align="center">
-  <strong>v0.1.1</strong><br>
+  <strong>v0.1.2</strong><br>
   <a href="https://vty.dev">vty.dev</a> · open source by <a href="https://github.com/InertiaUX">Inertia</a>
 </p>
 
@@ -33,10 +33,10 @@ It’s a natural fit for the FiveM community, and for livestreamers who want qui
 
 | Platform | Get it |
 |----------|--------|
-| **macOS** (Apple Silicon) | [v0.1.1 arm64 zip](https://github.com/InertiaUX/Velocity/releases/download/v0.1.1/Velocity-0.1.1-macOS-arm64.zip) |
-| **macOS** (Intel) | [v0.1.1 x86_64 zip](https://github.com/InertiaUX/Velocity/releases/download/v0.1.1/Velocity-0.1.1-macOS-x86_64.zip) |
-| **Windows** (x64) | [v0.1.1 setup](https://github.com/InertiaUX/Velocity/releases/download/v0.1.1/Velocity-0.1.1-windows-x64-setup.exe) |
-| **Linux** (x86_64) | [AppImage](https://github.com/InertiaUX/Velocity/releases/download/v0.1.1/Velocity-0.1.1-linux-x86_64.AppImage) · [deb](https://github.com/InertiaUX/Velocity/releases/download/v0.1.1/Velocity-0.1.1-linux-x86_64.deb) |
+| **macOS** (Apple Silicon) | [v0.1.2 arm64 zip](https://github.com/InertiaUX/Velocity/releases/download/v0.1.2/Velocity-0.1.2-macOS-arm64.zip) |
+| **macOS** (Intel) | [v0.1.2 x86_64 zip](https://github.com/InertiaUX/Velocity/releases/download/v0.1.2/Velocity-0.1.2-macOS-x86_64.zip) |
+| **Windows** (x64) | [v0.1.2 setup](https://github.com/InertiaUX/Velocity/releases/download/v0.1.2/Velocity-0.1.2-windows-x64-setup.exe) |
+| **Linux** (x86_64) | [AppImage](https://github.com/InertiaUX/Velocity/releases/download/v0.1.2/Velocity-0.1.2-linux-x86_64.AppImage) · [deb](https://github.com/InertiaUX/Velocity/releases/download/v0.1.2/Velocity-0.1.2-linux-x86_64.deb) |
 
 All assets: [GitHub Releases](https://github.com/InertiaUX/Velocity/releases). Install notes: [docs/install.md](docs/install.md).
 
